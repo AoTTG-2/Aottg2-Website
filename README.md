@@ -25,6 +25,7 @@ To get started with contributing to the website, follow these steps:
 - TypeScript
 ### UI Libraries
 - Framer Motion
+- Tailwind
 
 
 ## Webdevs
