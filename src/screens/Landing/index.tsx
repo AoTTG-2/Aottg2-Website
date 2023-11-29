@@ -1,8 +1,8 @@
 import ReactPlayer from "react-player";
+import LandingLogo from "../../assets/images/logo-placeholder.png";
 import { useMeasure } from "react-use";
 import { useEffect, useState } from "react";
 import videoClips from "../../data/videoClips";
-
 
 const Landing = () => {
   const [containerRef, { height, width }] = useMeasure<HTMLDivElement>();
@@ -13,20 +13,17 @@ const Landing = () => {
     setPlayerPadding(100 / (width / height));
   }, [height, width]);
 
-   const handleAnimationEnd = () => {
-       //loop through videoclips
-        setCurrentVideoIndex((currentVideoIndex + 1) % videoClips.length);
-   }
+  const handleAnimationEnd = () => {
+    //loop through videoclips
+    setCurrentVideoIndex((currentVideoIndex + 1) % videoClips.length);
+  };
 
   return (
     <div
       ref={containerRef}
       className="h-[40vw] bg-black overflow-hidden relative"
     >
-      <div
-        className="relative"
-        style={{ padding: `${playerPadding}%` }}
-      >
+      <div className="relative" style={{ padding: `${playerPadding}%` }}>
         <ReactPlayer
           url={videoClips[currentVideoIndex]}
           loop={false}
@@ -45,6 +42,10 @@ const Landing = () => {
         />
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black to-transparent" />
         <div className="absolute top-0 left-0 w-full h-full bg-black opacity-50" />
+        {/* Container */}
+      </div>
+      <div className="absolute top-0 left-0 w-full h-full bg-[rgba(0,0,0,0)] flex flex-col items-center justify-center">
+        <img src={LandingLogo} className="w-[36rem]" />
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ function App() {
     <>
       <Navbar />
       <Landing />
+      <div className="w-full h-[300vh] bg-white" />
     </>
   );
 }
