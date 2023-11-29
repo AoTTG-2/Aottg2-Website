@@ -20,11 +20,16 @@ To get started with contributing to the website, follow these steps:
    ```
 ## Dev Tools
 
-- React, TypeScript, Vite
+### Tools
+- React
+- TypeScript
+### UI Libraries
+- Framer Motion
+
 
 ## Webdevs
 - gisketch
 - Godinho
-   
 
-   
+
+
