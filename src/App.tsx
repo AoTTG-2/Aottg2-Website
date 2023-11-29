@@ -1,11 +1,14 @@
-import Landing from "./screens/landing";
+/// <reference types="vite-plugin-svgr/client" />
+import Landing from "./screens/Landing";
+import Navbar from "./screens/Navbar";
 
 function App() {
-    return (
-        <>
-        <Landing />
-        </>
-    );
+  return (
+    <>
+      <Navbar />
+      <Landing />
+    </>
+  );
 }
 
 export default App;
