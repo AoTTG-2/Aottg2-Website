@@ -1,20 +1,22 @@
 import ReactPlayer from "react-player";
-import Video1 from "../assets/videos/0001-0163.mp4";
 import { useMeasure } from "react-use";
 import { useEffect, useState } from "react";
+import videoClips from "../../data/videoClips";
+
 
 const Landing = () => {
   const [containerRef, { height, width }] = useMeasure<HTMLDivElement>();
   const [playerPadding, setPlayerPadding] = useState<number>(0);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState<number>(0);
 
   useEffect(() => {
     setPlayerPadding(100 / (width / height));
   }, [height, width]);
 
-  console.log({ height });
-  console.log({ width });
-
-  const playerWrapperClass = `relative`;
+   const handleAnimationEnd = () => {
+       //loop through videoclips
+        setCurrentVideoIndex((currentVideoIndex + 1) % videoClips.length);
+   }
 
   return (
     <div
@@ -22,14 +24,15 @@ const Landing = () => {
       className="h-[40vw] bg-black overflow-hidden relative"
     >
       <div
-        className={playerWrapperClass}
+        className="relative"
         style={{ padding: `${playerPadding}%` }}
       >
         <ReactPlayer
-          url={Video1}
-          playing={true}
-          loop={true}
-          muted={true}
+          url={videoClips[currentVideoIndex]}
+          loop={false}
+          onEnded={handleAnimationEnd}
+          playing
+          muted
           height="100%"
           width="100"
           // TODO: fix top positioning
