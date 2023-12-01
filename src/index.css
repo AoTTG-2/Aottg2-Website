@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: "Primary";
+  src: url("/fonts/LT Sculpture.otf");
+}
+
+@font-face {
+  font-family: "Secondary";
+  src: url("/fonts/Intensa Fuente.ttf");
+}
+
+@font-face {
+  font-family: "Tertiary";
+  src: url("/fonts/JEK5.otf");
+}
