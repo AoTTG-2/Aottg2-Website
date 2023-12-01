@@ -3,6 +3,7 @@ import LandingLogo from "../../assets/images/logo-placeholder.png";
 import { useMeasure } from "react-use";
 import { useEffect, useState } from "react";
 import videoClips from "../../data/videoClips";
+import Button from "../../components/Button";
 
 const Landing = () => {
   const [containerRef, { height, width }] = useMeasure<HTMLDivElement>();
@@ -44,8 +45,11 @@ const Landing = () => {
         <div className="absolute top-0 left-0 w-full h-full bg-black opacity-50" />
         {/* Container */}
       </div>
-      <div className="absolute top-0 left-0 w-full h-full bg-[rgba(0,0,0,0)] flex flex-col items-center justify-center">
+      <div className="absolute top-0 left-0 w-full h-full bg-[rgba(0,0,0,0)] flex flex-col items-center gap-8 justify-center">
         <img src={LandingLogo} className="w-[36rem]" />
+        <Button>
+            Play for free
+        </Button>
       </div>
     </div>
   );
