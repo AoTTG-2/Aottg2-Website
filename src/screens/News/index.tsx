@@ -1,8 +1,9 @@
-import { motion, useInView } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import BgDark from "../../assets/images/bg-dark.png";
 import BrushImg from "../../assets/images/brush-secondary.png";
 import { useRef } from "react";
 import BlogPreview from "../../components/BlogPreview";
+import BrushSvg from "../../components/BrushSvg";
 
 const brushVariants = {
   initial: {
@@ -25,11 +26,11 @@ const HeaderText = () => {
       <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         Latest News
       </motion.span>
-      <motion.img
+      <BrushSvg
+      type="secondary"
         initial="initial"
         animate="animate"
         variants={brushVariants}
-        src={BrushImg}
         className="absolute top-0 left-0 h-full w-full z-[-1]"
         style={{ x: -10, y: 10 }}
       />
@@ -38,26 +39,36 @@ const HeaderText = () => {
 };
 
 const News = () => {
-  const viewRef = useRef(null);
-  const isInView = useInView(viewRef, { once: true });
+  const progressRef = useRef(null);
+  const { scrollYProgress } = useScroll();
+
+  const bgY = useTransform(scrollYProgress, [0, 1], [0, -500]);
+
+  const blogsY = useTransform(scrollYProgress, [0, 1], [0, -250]);
 
   return (
-    <div className="w-full overflow-hidden relative flex justify-center">
+    <div className="w-full relative flex justify-center" ref={progressRef}>
       {/* TODO: Parallax bg  */}
-      <img
+      <motion.img
+        style={{
+          y: bgY,
+        }}
         src={BgDark}
-        className="w-full h-full absolute top-0 left-0 z-[-1] scale-[110%]"
+        className="w-full h-[200%] absolute top-0 left-0 z-[-1] scale-y-[200%]"
       />
       <div className="lg: max-w-[1920px] py-24 px-32 w-full">
         {/* container !!! */}
         <div className="flex flex-col z-10 gap-12">
           <HeaderText />
-          <div className="flex justify-between items-stretch gap-8">
+          <motion.div
+            className="relative z-20 flex justify-between items-stretch gap-8"
+            style={{ y: blogsY }}
+          >
             {/* TODO: Don't hardcode */}
             <BlogPreview delay={0.5} />
             <BlogPreview delay={0.75} />
             <BlogPreview delay={1} />
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>
