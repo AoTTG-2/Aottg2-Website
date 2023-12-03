@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import BrushImg from "../assets/images/brush-secondary.png";
+import BrushSvg from "./BrushSvg";
 
 const brushVariantsHover = {
   initial: {
@@ -50,6 +51,7 @@ const BlogPreview = ({ delay }: { delay: number }) => {
   return (
     <motion.div
       className="flex flex-col text-white gap-2 cursor-pointer"
+      // TODO: delay to stagger
       variants={blogVariants(delay)}
       whileHover="hover"
       whileTap="tap"
@@ -64,9 +66,9 @@ const BlogPreview = ({ delay }: { delay: number }) => {
       </motion.div>
       <div className="text-3xl font-secondary relative z-0 w-max">
         Blog Post Update Placeholder Title
-        <motion.img
+        <BrushSvg
+          type="secondary"
           variants={brushVariantsHover}
-          src={BrushImg}
           className="absolute top-0 left-0 h-full w-full z-[-1]"
         />
       </div>

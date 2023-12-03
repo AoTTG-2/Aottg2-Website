@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import BrushSvg from "./BrushSvg";
 import Brush from "../assets/images/brush.png";
 
 const buttonVariants = {
@@ -54,9 +55,9 @@ const Button = ({
       whileHover="hover"
       whileTap="tap"
     >
-      <motion.img
+      <BrushSvg
         variants={brushVariants}
-        src={Brush}
+        type="primary"
         style={{
           x: -50,
           clipPath: "inset(0 100% 0 0)",
