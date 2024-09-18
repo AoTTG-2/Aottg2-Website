@@ -4,12 +4,12 @@ import CrackedSvg from "./CrackedSvg";
 const TexturedDiv = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
-      <div className="absolute w-full h-max translate-y-[-100%] z-5 bg-transparent">
+      {/* <div className="absolute w-full h-max translate-y-[-100%] z-5 bg-transparent">
         <CrackedSvg
           className="w-full h-auto scale-[-100%] z-[1] "
           color="#f0f0f0"
         />
-      </div>
+      </div> */}
 
       <div
         style={{ backgroundImage: `url(${BgLight})` }}
@@ -20,10 +20,10 @@ const TexturedDiv = ({ children }: { children: React.ReactNode }) => {
         <div className="h-24 absolute bottom-0 w-full bg-gradient-to-t from-[#f0f0f0] to-transparent" />
       </div>
 
-      <div className="absolute w-full h-max z-5 bg-transparent">
+      {/* <div className="absolute w-full h-max z-5 bg-transparent">
         <CrackedSvg className="absolute top-0 w-full h-auto z-[2] " color="#f0f0f0" />
         <CrackedSvg className="absolute top-3 w-full h-auto z-[1] opacity-50" color="black" />
-      </div>
+      </div> */}
     </>
   );
 };
