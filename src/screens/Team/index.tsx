@@ -1,4 +1,3 @@
-import React from "react";
 import BgContainer from "../../components/BgContainer";
 import Button from "../../components/Button";
 import AotLogo from "../../assets/images/logo-placeholder.png";

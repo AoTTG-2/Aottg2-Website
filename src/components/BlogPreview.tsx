@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import BrushImg from "../assets/images/brush-secondary.png";
 import BrushSvg from "./BrushSvg";
 
 const brushVariantsHover = {

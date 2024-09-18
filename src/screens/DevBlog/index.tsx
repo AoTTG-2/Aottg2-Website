@@ -1,5 +1,4 @@
 import BgContainer from "../../components/BgContainer";
-import CrackedSvg from "../../components/CrackedSvg";
 
 const DevBlog = () => {
   return (

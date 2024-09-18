@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Community from "./screens/Community";
 import DevBlog from "./screens/DevBlog";

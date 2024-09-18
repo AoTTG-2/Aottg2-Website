@@ -4,7 +4,6 @@ import { useMeasure } from "react-use";
 import { useEffect, useState } from "react";
 import videoClips from "../../data/videoClips";
 import Button from "../../components/Button";
-import BrushSvg from "../../components/BrushSvg";
 import { handleExternalLink, playGameLink } from "../../data/links";
 
 const Landing = () => {
