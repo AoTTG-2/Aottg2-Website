@@ -1,18 +1,58 @@
-/// <reference types="vite-plugin-svgr/client" />
-import Feature from "./screens/Feature";
+import React, { useRef } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Community from "./screens/Community";
+import DevBlog from "./screens/DevBlog";
+import Footer from "./screens/Footer";
 import Landing from "./screens/Landing";
 import Navbar from "./screens/Navbar";
-import News from "./screens/News";
+import Servers from "./screens/Servers";
+import Team from "./screens/Team";
+import Credits from "./page/Credits"; // New Credits component
 
 function App() {
-  return (
+  const homeRef = useRef(null);
+  const devblogRef = useRef(null);
+  const communityRef = useRef(null);
+  const supportRef = useRef(null);
+  const creditsRef = useRef(null);
+
+  const refs = {
+    home: homeRef,
+    devblog: devblogRef,
+    community: communityRef,
+    support: supportRef,
+    credits: creditsRef,
+  };
+
+  const MainContent = () => (
     <>
-      <Navbar />
-      <Landing />
-      <News />
-      <Feature />
-      <div className="w-full h-[300vh] bg-white" />
+      <div ref={homeRef}>
+        <Landing />
+      </div>
+      <div ref={devblogRef}>
+        <DevBlog />
+      </div>
+      <div ref={communityRef}>
+        <Community />
+      </div>
+      <div ref={supportRef}>
+        <Servers />
+      </div>
+      <div ref={creditsRef}>
+        <Team />
+      </div>
     </>
+  );
+
+  return (
+    <Router>
+      <Navbar refs={refs} />
+      <Routes>
+        <Route path="/" element={<MainContent />} />
+        <Route path="/credits" element={<Credits />} />
+      </Routes>
+      <Footer />
+    </Router>
   );
 }
 

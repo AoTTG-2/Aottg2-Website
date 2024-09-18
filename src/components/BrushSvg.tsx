@@ -2,24 +2,30 @@ import { motion } from "framer-motion";
 
 // extend DIV props
 interface BrushProps extends React.ComponentProps<typeof motion.div> {
-  type: "primary" | "secondary";
+  type?: "primary" | "secondary";
+  color?: string;
 }
 
-const BrushSvg: React.FC<BrushProps> = ({ type = "primary", ...props }) => {
-  let color;
+const BrushSvg: React.FC<BrushProps> = ({
+  type = "primary",
+  color: colorProp,
+  ...props
+}) => {
+  let color = colorProp;
 
-  switch (type) {
-    case "primary":
-      color = "#852837";
-      break;
-    case "secondary":
-      color = "#614c90";
-      break;
-    default:
-      // Optional: Define a default case if needed
-      color = "#852837"; // Replace 'defaultColor' with your desired default color
-      break;
+  if (!color) {
+    switch (type) {
+      case "primary":
+        color = "#852837";
+        break;
+      case "secondary":
+        color = "#614c90";
+        break;
+      default:
+        color = "#852837"; // Default color if type is not recognized
+    }
   }
+
   return (
     <motion.div {...props}>
       <svg

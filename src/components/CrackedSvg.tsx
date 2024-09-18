@@ -13,8 +13,6 @@ const CrackedSvg = ({
     <svg
       className={className}
       xmlns="http://www.w3.org/2000/svg"
-      width="1469"
-      height="132"
       viewBox="0 100 1469 132"
       fill="none"
     >

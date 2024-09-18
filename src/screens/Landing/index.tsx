@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import videoClips from "../../data/videoClips";
 import Button from "../../components/Button";
 import BrushSvg from "../../components/BrushSvg";
+import { handleExternalLink, playGameLink } from "../../data/links";
 
 const Landing = () => {
   const [containerRef, { height, width }] = useMeasure<HTMLDivElement>();
@@ -23,7 +24,7 @@ const Landing = () => {
   return (
     <div
       ref={containerRef}
-      className="h-[40vw] bg-black overflow-hidden relative"
+      className="h-[40vw] bg-black overflow-hidden relative max-md:mt-24"
     >
       <div className="relative" style={{ padding: `${playerPadding}%` }}>
         <ReactPlayer
@@ -47,9 +48,12 @@ const Landing = () => {
         {/* Container */}
       </div>
       <div className="absolute top-0 left-0 w-full h-full bg-[rgba(0,0,0,0)] flex flex-col items-center gap-8 justify-center">
-        <img src={LandingLogo} className="w-[36rem]" />
-        <Button>
-            Play for free
+        <img src={LandingLogo} className="w-[24rem] lg:w-[36rem]" />
+        <Button
+          className="text-xl lg:text-3xl"
+          onClick={handleExternalLink(playGameLink)}
+        >
+          Play for free
         </Button>
       </div>
     </div>
