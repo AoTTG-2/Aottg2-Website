@@ -1,5 +1,4 @@
 import BgLight from "../assets/images/bg-light.png";
-import CrackedSvg from "./CrackedSvg";
 
 const TexturedDiv = ({ children }: { children: React.ReactNode }) => {
   return (
