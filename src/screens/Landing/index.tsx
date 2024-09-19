@@ -23,7 +23,7 @@ const Landing = () => {
   return (
     <div
       ref={containerRef}
-      className="h-[40vw] bg-black overflow-hidden relative max-md:mt-24"
+      className="h-[40vw] bg-black overflow-hidden relative mt-16 md:mt-24 lg:mt-0"
     >
       <div className="relative" style={{ padding: `${playerPadding}%` }}>
         <ReactPlayer
@@ -46,10 +46,10 @@ const Landing = () => {
         <div className="absolute top-0 left-0 w-full h-full bg-black opacity-50" />
         {/* Container */}
       </div>
-      <div className="absolute top-0 left-0 w-full h-full bg-[rgba(0,0,0,0)] flex flex-col items-center gap-8 justify-center">
-        <img src={LandingLogo} className="w-[24rem] lg:w-[36rem]" />
+      <div className="absolute top-0 left-0 w-full h-full bg-[rgba(0,0,0,0)] flex flex-col items-center gap-4 lg:gap-8 justify-center">
+        <img src={LandingLogo} className="w-[12rem] md:w-[24rem] lg:w-[36rem]" />
         <Button
-          className="text-xl lg:text-3xl"
+          className="text-lg md:text-xl lg:text-3xl"
           onClick={handleExternalLink(playGameLink)}
         >
           Play for free

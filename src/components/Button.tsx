@@ -69,7 +69,7 @@ const Button = ({
     amount: 0.5,
   });
 
-  const classes = `select-none font-primary uppercase text-white text-3xl ${className} px-8 py-4 flex justify-center items-center leading-1 relative cursor-pointer`;
+  const classes = `select-none font-primary uppercase text-white text-xl md:text-2xl lg:text-3xl ${className} px-8 py-4 flex justify-center items-center leading-1 relative cursor-pointer`;
 
   return (
     <motion.div
