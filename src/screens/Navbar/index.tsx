@@ -4,7 +4,6 @@ import NavbarTexture from "../../assets/images/bg-light.png";
 import Logo from "../../assets/images/navbar-image.png";
 import useBreakpoint from "../../utils/useBreakpoint";
 import { useLocation, useNavigate } from "react-router-dom";
-import CrackedSvg from "../../components/CrackedSvg";
 
 interface NavbarProps {
   refs: {
@@ -51,22 +50,15 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
     } else {
       if (location.pathname !== "/") {
         navigate("/");
-        setTimeout(() => {
-          const element = refs[id]?.current;
-          if (element) {
-            element.scrollIntoView({ behavior: "smooth" });
-          }
-        }, 100);
-      } else {
+      }
+      setTimeout(() => {
         const element = refs[id]?.current;
         if (element) {
           element.scrollIntoView({ behavior: "smooth" });
         }
-      }
+      }, 100);
     }
-    if (isMobile) {
-      setIsMenuOpen(false);
-    }
+    setIsMenuOpen(false);
   };
 
   return (

@@ -11,7 +11,7 @@ Our Servers:
 • CN (China)
 • ASIA (Asia)
 
-Your donations directly contribute to maintaining and improving 
+Your donations directly contribute to maintaining and improving
 these servers, ensuring a great gaming experience for all.
 
 100% of donations go towards server costs and improvements.`;
