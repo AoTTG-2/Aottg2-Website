@@ -1,53 +1,56 @@
 import ReactPlayer from "react-player";
 import LandingLogo from "../../assets/images/logo-placeholder.png";
-import { useMeasure } from "react-use";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import videoClips from "../../data/videoClips";
 import Button from "../../components/Button";
 import { handleExternalLink, playGameLink } from "../../data/links";
 
 const Landing = () => {
-  const [containerRef, { height, width }] = useMeasure<HTMLDivElement>();
-  const [playerPadding, setPlayerPadding] = useState<number>(0);
   const [currentVideoIndex, setCurrentVideoIndex] = useState<number>(0);
 
-  useEffect(() => {
-    setPlayerPadding(100 / (width / height));
-  }, [height, width]);
-
   const handleAnimationEnd = () => {
-    //loop through videoclips
     setCurrentVideoIndex((currentVideoIndex + 1) % videoClips.length);
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="h-[40vw] bg-black overflow-hidden relative mt-16 md:mt-0"
-    >
-      <div className="relative" style={{ padding: `${playerPadding}%` }}>
+    <div className="h-[40vw] bg-black overflow-hidden relative mt-16 md:mt-0">
+      <div className="absolute inset-0">
         <ReactPlayer
           url={videoClips[currentVideoIndex]}
           loop={false}
           onEnded={handleAnimationEnd}
           playing
           muted
+          width="100%"
           height="100%"
-          width="100"
-          // TODO: fix top positioning
           style={{
             position: "absolute",
-            top: "-20%",
-            left: 0,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
             objectFit: "cover",
           }}
+          config={{
+            file: {
+              attributes: {
+                style: {
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                },
+              },
+            },
+          }}
         />
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black to-transparent" />
-        <div className="absolute top-0 left-0 w-full h-full bg-black opacity-50" />
-        {/* Container */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
+        <div className="absolute inset-0 bg-black opacity-50" />
       </div>
-      <div className="absolute top-0 left-0 w-full h-full bg-[rgba(0,0,0,0)] flex flex-col items-center gap-4 lg:gap-8 justify-center">
-        <img src={LandingLogo} className="w-[12rem] md:w-[24rem] lg:w-[36rem]" />
+      <div className="absolute inset-0 bg-[rgba(0,0,0,0)] flex flex-col items-center gap-4 lg:gap-8 justify-center">
+        <img
+          src={LandingLogo}
+          className="w-[12rem] md:w-[24rem] lg:w-[36rem]"
+          alt="Landing Logo"
+        />
         <Button
           className="text-lg md:text-xl lg:text-3xl"
           onClick={handleExternalLink(playGameLink)}
