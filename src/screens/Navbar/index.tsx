@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import NavbarTexture from "../../assets/images/bg-dark.png";
-import Logo from "../../assets/images/logo-placeholder.png";
+import NavbarTexture from "../../assets/images/bg-light.png";
+import Logo from "../../assets/images/navbar-image.png";
 import useBreakpoint from "../../utils/useBreakpoint";
 import { useLocation, useNavigate } from "react-router-dom";
+import CrackedSvg from "../../components/CrackedSvg";
 
 interface NavbarProps {
   refs: {
@@ -94,12 +95,12 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
         {isMobile ? (
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="text-white text-2xl focus:outline-none"
+            className="text-black text-2xl focus:outline-none"
           >
             ☰
           </button>
         ) : (
-          <div className="flex flex-row gap-6 font-primary text-white">
+          <div className="flex flex-row gap-6 font-primary text-black">
             {menuItems.map((item, index) => (
               <button
                 key={index}

@@ -23,7 +23,7 @@ const Landing = () => {
   return (
     <div
       ref={containerRef}
-      className="h-[40vw] bg-black overflow-hidden relative mt-16 md:mt-24 lg:mt-0"
+      className="h-[40vw] bg-black overflow-hidden relative mt-16 md:mt-0"
     >
       <div className="relative" style={{ padding: `${playerPadding}%` }}>
         <ReactPlayer

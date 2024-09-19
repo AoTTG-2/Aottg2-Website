@@ -69,7 +69,7 @@ const BgContainer: React.FC<BgContainerProps> = ({
 
       <div
         className={`lg:max-w-[1920px] ${
-          isFooter ? "mb-12" : "py-12 px-16 lg:py-24 lg:px-32"
+          isFooter ? "mb-12 px-16 lg:px-32" : "py-12 px-16 lg:py-24 lg:px-32"
         } w-full relative z-10`}
       >
         <div
