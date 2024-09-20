@@ -1,13 +1,23 @@
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import React, { useRef } from "react";
+import { motion, useInView, Variants } from "framer-motion";
 import BrushSvg from "./BrushSvg";
 
-const buttonVariants = {
+interface ButtonProps {
+  className?: string;
+  hasBg?: boolean;
+  children: React.ReactNode;
+  type?: "primary" | "secondary";
+  onClick?: (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
+  hasIcon?: boolean;
+  IconComponent?: React.ReactNode;
+}
+
+const buttonVariants: Variants = {
   rest: { y: 0 },
   tap: { y: 5 },
 };
 
-const brushVariants = {
+const brushVariants: Variants = {
   hidden: {
     x: -50,
     clipPath: "inset(0 100% 0 0)",
@@ -28,7 +38,7 @@ const brushVariants = {
   },
 };
 
-const hasBgBrushVariants = {
+const hasBgBrushVariants: Variants = {
   hidden: {
     x: 0,
     clipPath: "inset(0 100% 0 0)",
@@ -50,26 +60,30 @@ const hasBgBrushVariants = {
   },
 };
 
-const textVariants = {
+const textVariants: Variants = {
   rest: { x: 0, y: 0 },
   hover: { x: 0, y: -4 },
   tap: { y: 0 },
 };
 
-const Button = ({
+const Button: React.FC<ButtonProps> = ({
   className = "",
   hasBg = true,
   children,
   type = "primary",
   onClick,
-}: any) => {
-  const ref = useRef(null);
+  hasIcon = false,
+  IconComponent,
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, {
     once: true,
     amount: 0.5,
   });
 
   const classes = `select-none font-primary uppercase text-white text-xl md:text-2xl lg:text-3xl ${className} px-8 py-4 flex justify-center items-center leading-1 relative cursor-pointer`;
+
+  const shadowStyle = { textShadow: "0 4px 0 rgba(0,0,0,0.50)" };
 
   return (
     <motion.div
@@ -90,10 +104,15 @@ const Button = ({
         whileHover="hover"
       />
       <motion.span
-        className="translate-y-[2px] z-[50]"
+        className="translate-y-[2px] z-[50] whitespace-nowrap flex items-start"
         variants={textVariants}
-        style={{ textShadow: "0 4px 0 rgba(0,0,0,0.50)" }}
+        style={shadowStyle}
       >
+        {hasIcon && IconComponent && (
+          <span className="mr-2" style={shadowStyle}>
+            {IconComponent}
+          </span>
+        )}
         {children}
       </motion.span>
     </motion.div>
