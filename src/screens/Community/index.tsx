@@ -4,6 +4,7 @@ import BgContainer from "../../components/BgContainer";
 import CommunityImg from "../../assets/images/community.png";
 import Button from "../../components/Button";
 import { handleExternalLink, Links } from "../../data/links";
+import { FaDiscord } from "react-icons/fa";
 
 const Community = () => {
   const ref = useRef(null);
@@ -36,7 +37,7 @@ const Community = () => {
             game discussions. Whether you're a veteran or new recruit, there's a
             place for you here. Join us beyond the walls!
           </span>
-          <Button hasBg onClick={handleExternalLink(Links.Discord)}>
+          <Button hasBg onClick={handleExternalLink(Links.Discord)} hasIcon IconComponent={<FaDiscord />}>
             Join the Discord
           </Button>
         </div>
@@ -44,7 +45,7 @@ const Community = () => {
 
       {/* This AnimatedImage will only be visible on large screens and above */}
       <motion.div
-        className="absolute top-0 right-0 w-full h-full hidden lg:block"
+        className="absolute top-0 right-0 w-full h-full max-lg:hidden lg:block"
         style={{ x: xPosition }}
       >
         <img
