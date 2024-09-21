@@ -1,5 +1,10 @@
 import { useRef } from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
 import Community from "./screens/Community";
 import DevBlog from "./screens/DevBlog";
 import Footer from "./screens/Footer";
@@ -50,6 +55,8 @@ function App() {
       <Routes>
         <Route path="/" element={<MainContent />} />
         <Route path="/credits" element={<Credits />} />
+        {/* Catch /Game and redirect */}
+        <Route path="/Game/*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />
     </Router>
