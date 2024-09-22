@@ -124,7 +124,7 @@ const Credits: React.FC = () => {
           filter: "brightness(0.2)",
         }}
       />
-      <div className="relative z-10 flex flex-col justify-center items-center gap-8 lg:max-w-[1920px] py-24 px-12">
+      <div className="relative z-10 flex flex-col justify-center items-center gap-8 lg:max-w-[1920px] py-24 px-12 mx-auto my-0">
         {credits.map((credit, index) => (
           <div
             key={index}
