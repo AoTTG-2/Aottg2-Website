@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import BgDark from "../../assets/images/bg-dark.png";
+import BgDark from "../../assets/images/bg-dark.webp";
 import { useRef } from "react";
 import BlogPreview from "../../components/BlogPreview";
 import HeaderText from "../../components/HeaderText";

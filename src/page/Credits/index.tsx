@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { creditJson } from "../../data/links";
-import BackgroundImage from "../../assets/images/bg-dark.png";
+import BackgroundImage from "../../assets/images/bg-dark.webp";
 import BrushSvg from "../../components/BrushSvg";
 
 interface CreditItem {

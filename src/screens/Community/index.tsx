@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import BgContainer from "../../components/BgContainer";
-import CommunityImg from "../../assets/images/community.png";
+import CommunityImg from "../../assets/images/community.webp";
 import Button from "../../components/Button";
 import { handleExternalLink, Links } from "../../data/links";
 import { FaDiscord } from "react-icons/fa";

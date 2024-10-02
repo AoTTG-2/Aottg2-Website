@@ -1,5 +1,5 @@
 import ReactPlayer from "react-player";
-import LandingLogo from "../../assets/images/logo-placeholder.png";
+import LandingLogo from "../../assets/images/logo-placeholder.webp";
 import { useState } from "react";
 import videoClips from "../../data/videoClips";
 import Button from "../../components/Button";
