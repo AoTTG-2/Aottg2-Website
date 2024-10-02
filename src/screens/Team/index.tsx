@@ -1,6 +1,6 @@
 import BgContainer from "../../components/BgContainer";
 import Button from "../../components/Button";
-import AotLogo from "../../assets/images/logo-placeholder.png";
+import AotLogo from "../../assets/images/logo-placeholder.webp";
 import TeamBg from "../../assets/images/teambg.jpg";
 import { useNavigate } from "react-router-dom";
 

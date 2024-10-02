@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import NavbarTexture from "../../assets/images/bg-light.png";
-import Logo from "../../assets/images/navbar-image.png";
+import NavbarTexture from "../../assets/images/bg-light.webp";
+import Logo from "../../assets/images/navbar-image.webp";
 import useBreakpoint from "../../utils/useBreakpoint";
 import { useLocation, useNavigate } from "react-router-dom";
 
