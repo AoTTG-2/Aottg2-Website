@@ -1,8 +1,8 @@
 import React from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import HeaderText from "./HeaderText";
-import BgDark from "../assets/images/bg-dark.png";
-import BgLight from "../assets/images/bg-light.png";
+import BgDark from "../assets/images/bg-dark.webp";
+import BgLight from "../assets/images/bg-light.webp";
 import CrackedSvg from "./CrackedSvg";
 import useBreakpoint from "../utils/useBreakpoint";
 

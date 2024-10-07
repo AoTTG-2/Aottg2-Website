@@ -1,4 +1,4 @@
-import BgLight from "../assets/images/bg-light.png";
+import BgLight from "../assets/images/bg-light.webp";
 
 const TexturedDiv = ({ children }: { children: React.ReactNode }) => {
   return (
