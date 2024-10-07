@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useScroll, motion } from "framer-motion";
 import BgContainer from "../../components/BgContainer";
 import Button from "../../components/Button";
-import Titan_1 from "../../assets/images/server-image-1.png";
-import Titan_2 from "../../assets/images/server-image-2.png";
+import Titan_1 from "../../assets/images/server-image-1.webp";
+import Titan_2 from "../../assets/images/server-image-2.webp";
 import { handleExternalLink, Links } from "../../data/links";
 import { FaPatreon } from "react-icons/fa";
 
