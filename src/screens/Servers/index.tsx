@@ -24,7 +24,7 @@ these servers, ensuring a great gaming experience for all.
 
 const shakeAnimation = {
   x: [0, -10, 10, -10, 10, 0],
-  transition: { duration: 0.5 }
+  transition: { duration: 0.5 },
 };
 
 const Servers = () => {
@@ -33,11 +33,11 @@ const Servers = () => {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["start end", "end start"]
+    offset: ["start end", "end start"],
   });
 
   useEffect(() => {
-    const unsubscribe = scrollYProgress.onChange(v => {
+    const unsubscribe = scrollYProgress.onChange((v) => {
       if (v > 0.5 && !showTitan2) {
         setShowTitan2(true);
         // Set shake to true after a small delay to ensure the image has changed
@@ -71,7 +71,7 @@ const Servers = () => {
         />
       </motion.div>
       <div className="whitespace-pre-wrap text-gray-300 font-primary text-2xl lg:text-3xl w-full lg:w-2/5 ml-auto flex flex-col gap-12 z-50 [text-shadow:_0_4px_0_rgb(0_0_0_/_40%)]">
-        {supportText}
+        <p>{supportText}</p>
         <Button
           hasBg
           type="secondary"

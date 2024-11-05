@@ -12,7 +12,8 @@ import Landing from "./screens/Landing";
 import Navbar from "./screens/Navbar";
 import Servers from "./screens/Servers";
 import Team from "./screens/Team";
-import Credits from "./page/Credits"; // New Credits component
+import Credits from "./page/Credits";
+import StructuredData from "./components/StructuredData";
 
 function App() {
   const homeRef = useRef(null);
@@ -51,6 +52,7 @@ function App() {
 
   return (
     <Router>
+      <StructuredData />
       <Navbar refs={refs} />
       <Routes>
         <Route path="/" element={<MainContent />} />

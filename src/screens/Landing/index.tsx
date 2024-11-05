@@ -7,6 +7,7 @@ import { handleExternalLink, playGameLink } from "../../data/links";
 
 const Landing = () => {
   const [currentVideoIndex, setCurrentVideoIndex] = useState<number>(0);
+  const [isVideoLoading, setIsVideoLoading] = useState(true); // Add loading state
 
   const handleAnimationEnd = () => {
     setCurrentVideoIndex((currentVideoIndex + 1) % videoClips.length);
@@ -15,10 +16,19 @@ const Landing = () => {
   return (
     <div className="h-[40vw] bg-black overflow-hidden relative mt-16 md:mt-0">
       <div className="absolute inset-0">
+        {isVideoLoading && (
+          <img
+            src="/video-placeholder.webp"
+            alt="Video placeholder"
+            className="absolute w-full h-full object-cover"
+          />
+        )}
         <ReactPlayer
           url={videoClips[currentVideoIndex]}
           loop={false}
           onEnded={handleAnimationEnd}
+          onReady={() => setIsVideoLoading(false)} // Add this
+          onBuffer={() => setIsVideoLoading(true)} // Add this
           playing
           muted
           width="100%"
@@ -29,6 +39,7 @@ const Landing = () => {
             left: "50%",
             transform: "translate(-50%, -50%)",
             objectFit: "cover",
+            opacity: isVideoLoading ? 0 : 1, // Add this
           }}
           config={{
             file: {

@@ -37,12 +37,12 @@ const HeaderText = ({
         isDark ? "text-[#b53c48]" : "text-white"
       } text-4xl lg:text-6xl relative w-max z-10`}
     >
-      <motion.span
+      <motion.h1
         initial={{ opacity: 0 }}
         animate={isInView ? { opacity: 1 } : { opacity: 0 }}
       >
         {title}
-      </motion.span>
+      </motion.h1>
       {!isDark && (
         <BrushSvg
           color={!isDark ? "#614c90" : "#b53c48"}

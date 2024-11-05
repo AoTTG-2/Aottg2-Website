@@ -31,13 +31,18 @@ const Community = () => {
           />
         </div>
         <div className="text-center lg:text-left lg:flex-none lg:w-2/5 lg:pr-4 font-primary text-2xl lg:text-4xl flex flex-col gap-12 z-10">
-          <span>
+          <p>
             Join our AoTTG 2 Discord! Connect with players, get updates, and
             share strategies. Chat with our team, report issues, and dive into
             game discussions. Whether you're a veteran or new recruit, there's a
             place for you here. Join us beyond the walls!
-          </span>
-          <Button hasBg onClick={handleExternalLink(Links.Discord)} hasIcon IconComponent={<FaDiscord />}>
+          </p>
+          <Button
+            hasBg
+            onClick={handleExternalLink(Links.Discord)}
+            hasIcon
+            IconComponent={<FaDiscord />}
+          >
             Join the Discord
           </Button>
         </div>
