@@ -1,7 +1,7 @@
 import BgContainer from "../../components/BgContainer";
 import Button from "../../components/Button";
 import AotLogo from "../../assets/images/logo-placeholder.webp";
-import TeamBg from "../../assets/images/teambg.jpg";
+import TeamBg from "../../assets/images/teambg.webp";
 import { useNavigate } from "react-router-dom";
 
 const Team = () => {
@@ -20,7 +20,12 @@ const Team = () => {
             <h2 className="text-2xl md:text-4xl lg:text-6xl">The Team Behind</h2>
             <img
               src={AotLogo}
-              className="ml-2 lg:ml-4 h-[2rem] md:h-[3rem] lg:h-[4.5rem]"
+              className="ml-2 lg:ml-4 h-[2rem] md:h-[3rem] lg:h-[4.5rem] w-auto max-w-[45vw] flex-shrink-0 object-contain"
+              alt="AoTTG 2 logo"
+              width="1000"
+              height="328"
+              loading="lazy"
+              decoding="async"
             />
           </span>
           <span className="font-secondary lg:mt-2 mb-4 lg:mb-8 text-lg md:text-2xl lg:text-4xl">

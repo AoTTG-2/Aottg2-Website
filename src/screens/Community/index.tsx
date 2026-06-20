@@ -27,7 +27,11 @@ const Community = () => {
           <img
             src={CommunityImg}
             className="w-full h-auto object-cover"
-            alt="Community"
+            alt="AoTTG 2 Discord community artwork"
+            width="1920"
+            height="1140"
+            loading="lazy"
+            decoding="async"
           />
         </div>
         <div className="text-center lg:text-left lg:flex-none lg:w-2/5 lg:pr-4 font-primary text-2xl lg:text-4xl flex flex-col gap-12 z-10">
@@ -56,7 +60,12 @@ const Community = () => {
         <img
           src={CommunityImg}
           className="h-full w-auto object-cover object-left"
-          alt="Community"
+          alt=""
+          aria-hidden="true"
+          width="1920"
+          height="1140"
+          loading="lazy"
+          decoding="async"
         />
       </motion.div>
     </BgContainer>

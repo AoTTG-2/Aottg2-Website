@@ -4,15 +4,21 @@
 
 @font-face {
   font-family: "Primary";
-  src: url("/fonts/LT Sculpture.otf");
+  src: url("/fonts/primary.woff2") format("woff2"),
+    url("/fonts/primary.otf") format("opentype");
+  font-display: swap;
 }
 
 @font-face {
   font-family: "Secondary";
-  src: url("/fonts/Intensa Fuente.ttf");
+  src: url("/fonts/secondary.woff2") format("woff2"),
+    url("/fonts/secondary.ttf") format("truetype");
+  font-display: swap;
 }
 
 @font-face {
   font-family: "Tertiary";
-  src: url("/fonts/JEK5.otf");
+  src: url("/fonts/tertiary.woff2") format("woff2"),
+    url("/fonts/tertiary.otf") format("opentype");
+  font-display: swap;
 }

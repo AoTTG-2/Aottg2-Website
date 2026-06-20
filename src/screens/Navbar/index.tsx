@@ -80,14 +80,19 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
       >
         <img
           src={Logo}
-          className={`${isMobile ? "h-8" : "h-12"} cursor-pointer`}
-          alt="Logo"
+          className={`${isMobile ? "h-8" : "h-12"} w-auto flex-shrink-0 object-contain cursor-pointer`}
+          alt="AoTTG 2 home"
+          width="453"
+          height="155"
+          decoding="async"
           onClick={() => scrollToSection("home")}
         />
         {isMobile ? (
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="text-black text-2xl focus:outline-none"
+            aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMenuOpen}
           >
             ☰
           </button>

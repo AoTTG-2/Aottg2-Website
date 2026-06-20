@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { lazy, Suspense, useRef } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -12,8 +12,9 @@ import Landing from "./screens/Landing";
 import Navbar from "./screens/Navbar";
 import Servers from "./screens/Servers";
 import Team from "./screens/Team";
-import Credits from "./page/Credits";
 import StructuredData from "./components/StructuredData";
+
+const Credits = lazy(() => import("./page/Credits"));
 
 function App() {
   const homeRef = useRef(null);
@@ -54,12 +55,14 @@ function App() {
     <Router>
       <StructuredData />
       <Navbar refs={refs} />
-      <Routes>
-        <Route path="/" element={<MainContent />} />
-        <Route path="/credits" element={<Credits />} />
-        {/* Catch /Game and redirect */}
-        <Route path="/Game/*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<MainContent />} />
+          <Route path="/credits" element={<Credits />} />
+          {/* Catch /Game and redirect */}
+          <Route path="/Game/*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
       <Footer />
     </Router>
   );

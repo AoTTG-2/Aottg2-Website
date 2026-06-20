@@ -55,14 +55,20 @@ const BgContainer: React.FC<BgContainerProps> = ({
           <motion.img
             src={customSrc}
             className="w-full h-full object-cover"
-            alt="Background"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
             style={{ scale, y }}
           />
         ) : (
           <img
             src={isDark ? BgDark : BgLight}
             className="w-full h-full object-cover"
-            alt="Background"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
           />
         )}
       </div>

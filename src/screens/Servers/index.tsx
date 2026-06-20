@@ -67,7 +67,11 @@ const Servers = () => {
         <img
           src={showTitan2 ? Titan_2 : Titan_1}
           className="object-cover lg:w-full lg:h-full"
-          alt={showTitan2 ? "Titan 2 (stomped)" : "Titan 1 (before stomping)"}
+          alt={showTitan2 ? "Titan after stomping" : "Titan before stomping"}
+          width="424"
+          height="520"
+          loading="lazy"
+          decoding="async"
         />
       </motion.div>
       <div className="whitespace-pre-wrap text-gray-300 font-primary text-2xl lg:text-3xl w-full lg:w-2/5 ml-auto flex flex-col gap-12 z-50 [text-shadow:_0_4px_0_rgb(0_0_0_/_40%)]">
