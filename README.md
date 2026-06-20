@@ -14,7 +14,12 @@ To get started with contributing to the website, follow these steps:
    ```bash
    cd Aottg2-Website && npm install
    ```
-3. **Run the development server:**
+3. **Configure local auth API:**
+   ```bash
+   cp .env.example .env.local
+   # edit VITE_AUTH_API_BASE_URL if your accounts API is not on localhost:5000
+   ```
+4. **Run the development server:**
    ```bash
    npm run dev
    ```

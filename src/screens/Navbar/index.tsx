@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { useLocation, useNavigate } from "react-router-dom";
 import NavbarTexture from "../../assets/images/bg-light.webp";
 import Logo from "../../assets/images/navbar-image.webp";
+import { useAuth } from "../../auth/useAuth";
 import useBreakpoint from "../../utils/useBreakpoint";
-import { useLocation, useNavigate } from "react-router-dom";
 
 interface NavbarProps {
   refs: {
@@ -11,11 +12,18 @@ interface NavbarProps {
   };
 }
 
+interface MenuItem {
+  name: string;
+  id?: string;
+  path?: string;
+}
+
 const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   const { scrollY } = useScroll();
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isMobile = useBreakpoint(768);
+  const { isAuthenticated } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,12 +43,13 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
     },
   };
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     { name: "DEVBLOG", id: "devblog" },
     { name: "COMMUNITY", id: "community" },
     { name: "SUPPORT", id: "support" },
     { name: "CREDITS", id: "credits" },
     { name: "PLAY", id: "home" },
+    { name: isAuthenticated ? "ACCOUNT" : "LOGIN", path: isAuthenticated ? "/accounts" : "/login" },
   ];
 
   const scrollToSection = (id: string) => {
@@ -59,6 +68,19 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
       }, 100);
     }
     setIsMenuOpen(false);
+  };
+
+  const handleMenuItem = (item: MenuItem) => {
+    if (item.path) {
+      navigate(item.path);
+      window.scrollTo(0, 0);
+      setIsMenuOpen(false);
+      return;
+    }
+
+    if (item.id) {
+      scrollToSection(item.id);
+    }
   };
 
   return (
@@ -98,10 +120,10 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
           </button>
         ) : (
           <div className="flex flex-row gap-6 font-primary text-black">
-            {menuItems.map((item, index) => (
+            {menuItems.map((item) => (
               <button
-                key={index}
-                onClick={() => scrollToSection(item.id)}
+                key={item.name}
+                onClick={() => handleMenuItem(item)}
                 className="cursor-pointer hover:text-[#852837] transition-colors duration-300"
               >
                 {item.name}
@@ -122,10 +144,10 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
           transition={{ duration: 0.3 }}
           className="bg-[#111111] text-white overflow-hidden font-primary"
         >
-          {menuItems.map((item, index) => (
+          {menuItems.map((item) => (
             <button
-              key={index}
-              onClick={() => scrollToSection(item.id)}
+              key={item.name}
+              onClick={() => handleMenuItem(item)}
               className="w-full text-left p-4 hover:bg-gray-800 transition-colors duration-300"
             >
               {item.name}
