@@ -5,6 +5,16 @@ import viteCompression from "vite-plugin-compression";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      "/accounts-api": {
+        target: "https://accounts.aottg2.com",
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/accounts-api/, ""),
+      },
+    },
+  },
   plugins: [
     react(),
     svgr(),

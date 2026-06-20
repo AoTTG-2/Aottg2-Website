@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/accounts-api/:path*",
+      "destination": "https://accounts.aottg2.com/:path*"
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",

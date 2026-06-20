@@ -4,7 +4,7 @@ import { authApi } from "./api";
 import { AuthContext } from "./AuthContext";
 import type { AuthContextValue } from "./AuthContext";
 import { clearTokens, getRefreshToken, hasTokens, setTokens } from "./storage";
-import type { ProfileResponse } from "./types";
+import type { AuthResponse, ProfileResponse } from "./types";
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -78,6 +78,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return { ok: true };
   }, []);
 
+  const acceptSession = useCallback((auth: AuthResponse) => {
+    setTokens(auth.accessToken, auth.refreshToken);
+    setProfile(auth.profile);
+  }, []);
+
   const logout = useCallback(async () => {
     const refreshToken = getRefreshToken();
     if (refreshToken) {
@@ -97,9 +102,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: profile !== null,
     isLoading,
     login,
+    acceptSession,
     logout,
     refreshProfile,
-  }), [profile, isLoading, login, logout, refreshProfile]);
+  }), [profile, isLoading, login, acceptSession, logout, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

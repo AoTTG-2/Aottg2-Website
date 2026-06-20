@@ -17,6 +17,12 @@ import { AuthProvider } from "./auth/AuthProvider";
 
 const Credits = lazy(() => import("./page/Credits"));
 const Login = lazy(() => import("./page/Login"));
+const Register = lazy(() => import("./page/Register"));
+const Verify = lazy(() => import("./page/Verify"));
+const ResendVerification = lazy(() => import("./page/ResendVerification"));
+const ForgotPassword = lazy(() => import("./page/ForgotPassword"));
+const ResetPassword = lazy(() => import("./page/ResetPassword"));
+const OAuthCallback = lazy(() => import("./page/OAuthCallback"));
 const Accounts = lazy(() => import("./page/Accounts"));
 
 function App() {
@@ -64,6 +70,12 @@ function App() {
             <Route path="/" element={<MainContent />} />
             <Route path="/credits" element={<Credits />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/verify" element={<Verify />} />
+            <Route path="/resend-verification" element={<ResendVerification />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/oauth-callback" element={<OAuthCallback />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/account" element={<Navigate to="/accounts" replace />} />
             {/* Catch /Game and redirect */}

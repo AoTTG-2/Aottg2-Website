@@ -1,3 +1,5 @@
+export type OAuthProvider = "discord" | "google";
+
 export interface PatreonStatus {
   linked: boolean;
   patronStatus: string | null;
@@ -27,6 +29,17 @@ export interface AuthResponse {
   accessTokenExpiresAt?: string;
   photonTokenExpiresAt?: string;
   profile: ProfileResponse;
+}
+
+export interface RegisterResponse {
+  accountId: string;
+  email: string;
+  verificationToken?: string | null;
+}
+
+export interface OAuthStartResponse {
+  authorizationUrl: string;
+  state: string;
 }
 
 export interface ErrorResponse {

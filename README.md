@@ -17,7 +17,8 @@ To get started with contributing to the website, follow these steps:
 3. **Configure local auth API:**
    ```bash
    cp .env.example .env.local
-   # edit VITE_AUTH_API_BASE_URL if your accounts API is not on localhost:5000
+   # recommended: VITE_AUTH_API_BASE_URL=/accounts-api
+   # this uses the Vite/Vercel proxy to https://accounts.aottg2.com and avoids browser CORS issues
    ```
 4. **Run the development server:**
    ```bash
