@@ -33,6 +33,8 @@ test('website login reaches account page and logout returns to login', async ({ 
   await expect(page.getByRole('button', { name: 'Continue with Discord' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+  await expect(page.getByText('AOTTG 2 - A Fan Project')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'PLAY', exact: true })).toBeVisible();
 
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password').fill(password);
@@ -45,6 +47,8 @@ test('website login reaches account page and logout returns to login', async ({ 
   await expect(page.getByRole('heading', { name: 'Patreon' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Delete account' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
+  await expect(page.getByText('AOTTG 2 - A Fan Project')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'PLAY', exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('account-page.png'), fullPage: true });
 
   await page.goto('http://localhost:5173/');

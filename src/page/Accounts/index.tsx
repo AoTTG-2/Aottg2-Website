@@ -2,6 +2,12 @@ import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../auth/api";
 import { useAuth } from "../../auth/useAuth";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Separator } from "../../components/ui/separator";
 import { AuthShell, ErrorMessage, SuccessMessage } from "../Auth/AuthShell";
 
 export default function Accounts() {
@@ -125,7 +131,7 @@ export default function Accounts() {
   if (isLoading || !profile) {
     return (
       <AuthShell eyebrow="Account" title="Loading account…" maxWidthClass="max-w-md">
-        <div className="mx-auto mt-8 h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-primary" />
+        <div className="mx-auto mt-8 h-10 w-10 animate-spin border-4 border-white/20 border-t-primary" />
       </AuthShell>
     );
   }
@@ -133,143 +139,143 @@ export default function Accounts() {
   const patreon = profile.patreon;
 
   return (
-    <AuthShell eyebrow="Account" title={`Welcome, ${profile.displayName}`} subtitle="Manage your AOTTG2 account." maxWidthClass="max-w-3xl">
-      <div className="mt-8 grid gap-5">
-        <section className="rounded border border-white/10 bg-white/5 p-5">
-          <h2 className="font-primary text-2xl uppercase">Profile</h2>
-          <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-white/50">Display name</dt>
-              <dd className="mt-1 text-lg">{profile.displayName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-white/50">Email</dt>
-              <dd className="mt-1 text-lg break-all">{profile.email}</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wide text-white/50">Email verified</dt>
-              <dd className="mt-1 text-lg">{profile.emailVerified ? "Yes" : "No"}</dd>
-            </div>
-            {profile.photonUserId && (
+    <AuthShell
+      eyebrow="Account"
+      title={`Welcome, ${profile.displayName}`}
+      subtitle="Manage your AOTTG2 account."
+      maxWidthClass="max-w-3xl"
+      cardClassName="bg-black/80"
+    >
+      <div className="grid gap-5">
+        <Card className="border-white/10 bg-white/[0.04]">
+          <CardHeader>
+            <CardTitle className="text-2xl">Profile</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-4 sm:grid-cols-2">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-white/50">Photon user id</dt>
-                <dd className="mt-1 text-lg break-all">{profile.photonUserId}</dd>
+                <dt className="text-xs uppercase tracking-wide text-white/50">Display name</dt>
+                <dd className="mt-1 text-lg">{profile.displayName}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-white/50">Email</dt>
+                <dd className="mt-1 break-all text-lg">{profile.email}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-white/50">Email verified</dt>
+                <dd className="mt-1 text-lg">{profile.emailVerified ? "Yes" : "No"}</dd>
+              </div>
+              {profile.photonUserId && (
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-white/50">Photon user id</dt>
+                  <dd className="mt-1 break-all text-lg">{profile.photonUserId}</dd>
+                </div>
+              )}
+            </dl>
+            {!profile.emailVerified && (
+              <Alert variant="destructive" className="mt-5">
+                <AlertDescription>
+                  Email not verified. <Link className="underline underline-offset-4" to="/resend-verification">Resend verification →</Link>
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/10 bg-white/[0.04]">
+          <CardHeader>
+            <CardTitle className="text-2xl">Change display name</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleUpdateName}>
+              <div className="space-y-2">
+                <Label htmlFor="new-display-name">New display name</Label>
+                <Input
+                  id="new-display-name"
+                  type="text"
+                  autoComplete="username"
+                  value={newName}
+                  onChange={(event) => setNewName(event.target.value)}
+                  maxLength={25}
+                  required
+                />
+                <span className="block text-right text-xs text-white/40">{newName.length}/25</span>
+              </div>
+              {nameMessage && (nameOk ? <SuccessMessage>{nameMessage}</SuccessMessage> : <ErrorMessage>{nameMessage}</ErrorMessage>)}
+              <Button type="submit" variant="brush" size="lg" disabled={nameLoading}>
+                {nameLoading ? "Saving…" : "Save"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/10 bg-white/[0.04]">
+          <CardHeader>
+            <CardTitle className="text-2xl">Patreon</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {patreon?.linked ? (
+              <div className="space-y-4 text-sm text-white/80">
+                <p>Status: <span className="text-white">{patreon.patronStatus ?? "Linked"}</span></p>
+                {patreon.tierIds.length > 0 && <p>Tiers: <span className="text-white">{patreon.tierIds.join(", ")}</span></p>}
+                {patreon.entitledAmountCents != null && (
+                  <p>Pledge: <span className="text-white">${(patreon.entitledAmountCents / 100).toFixed(2)}/month</span></p>
+                )}
+                {patreonError && <ErrorMessage>{patreonError}</ErrorMessage>}
+                <Button type="button" variant="account" onClick={handlePatreonUnlink} disabled={patreonLoading}>
+                  {patreonLoading ? "Unlinking…" : "Unlink Patreon"}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4 text-sm text-white/70">
+                <p>Link your Patreon account to sync supporter tiers.</p>
+                {patreonError && <ErrorMessage>{patreonError}</ErrorMessage>}
+                <Button type="button" variant="brush" size="lg" onClick={handlePatreonLink} disabled={patreonLoading}>
+                  {patreonLoading ? "Redirecting…" : "Link Patreon"}
+                </Button>
               </div>
             )}
-          </dl>
-          {!profile.emailVerified && (
-            <p className="mt-5 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              Email not verified. <Link className="underline" to="/resend-verification">Resend verification →</Link>
+          </CardContent>
+        </Card>
+
+        <Card className="border-red-500/40 bg-red-950/20">
+          <CardHeader>
+            <CardTitle className="text-2xl text-red-100">Delete account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-6 text-red-100/80">
+              This permanently deletes your account and associated data. This action cannot be undone.
             </p>
-          )}
-        </section>
+            <form className="mt-5 space-y-4" onSubmit={handleDeleteAccount}>
+              <div className="space-y-2">
+                <Label htmlFor="delete-confirm">Type <strong>DELETE</strong> to confirm</Label>
+                <Input
+                  id="delete-confirm"
+                  type="text"
+                  autoComplete="off"
+                  placeholder="DELETE"
+                  value={deleteConfirm}
+                  onChange={(event) => setDeleteConfirm(event.target.value)}
+                  className="border-red-500/30 focus-visible:ring-red-400"
+                />
+              </div>
+              {deleteError && <ErrorMessage>{deleteError}</ErrorMessage>}
+              <Button type="submit" variant="destructive" size="lg" className="font-primary text-xl" disabled={deleteLoading}>
+                {deleteLoading ? "Deleting…" : "Delete my account"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-        <section className="rounded border border-white/10 bg-white/5 p-5">
-          <h2 className="font-primary text-2xl uppercase">Change display name</h2>
-          <form className="mt-5 space-y-4" onSubmit={handleUpdateName}>
-            <label className="block text-sm text-white/80" htmlFor="new-display-name">
-              New display name
-              <input
-                id="new-display-name"
-                type="text"
-                autoComplete="username"
-                className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
-                value={newName}
-                onChange={(event) => setNewName(event.target.value)}
-                maxLength={25}
-                required
-              />
-              <span className="mt-1 block text-right text-xs text-white/40">{newName.length}/25</span>
-            </label>
-            {nameMessage && (nameOk ? <SuccessMessage>{nameMessage}</SuccessMessage> : <ErrorMessage>{nameMessage}</ErrorMessage>)}
-            <button
-              type="submit"
-              className="rounded bg-primary px-5 py-3 font-primary text-xl uppercase text-white transition hover:bg-[#9f3344] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={nameLoading}
-            >
-              {nameLoading ? "Saving…" : "Save"}
-            </button>
-          </form>
-        </section>
-
-        <section className="rounded border border-white/10 bg-white/5 p-5">
-          <h2 className="font-primary text-2xl uppercase">Patreon</h2>
-          {patreon?.linked ? (
-            <div className="mt-5 space-y-4 text-sm text-white/80">
-              <p>Status: <span className="text-white">{patreon.patronStatus ?? "Linked"}</span></p>
-              {patreon.tierIds.length > 0 && <p>Tiers: <span className="text-white">{patreon.tierIds.join(", ")}</span></p>}
-              {patreon.entitledAmountCents != null && (
-                <p>Pledge: <span className="text-white">${(patreon.entitledAmountCents / 100).toFixed(2)}/month</span></p>
-              )}
-              {patreonError && <ErrorMessage>{patreonError}</ErrorMessage>}
-              <button
-                type="button"
-                className="rounded border border-white/20 px-5 py-3 font-primary text-xl uppercase text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={handlePatreonUnlink}
-                disabled={patreonLoading}
-              >
-                {patreonLoading ? "Unlinking…" : "Unlink Patreon"}
-              </button>
-            </div>
-          ) : (
-            <div className="mt-5 space-y-4 text-sm text-white/70">
-              <p>Link your Patreon account to sync supporter tiers.</p>
-              {patreonError && <ErrorMessage>{patreonError}</ErrorMessage>}
-              <button
-                type="button"
-                className="rounded bg-primary px-5 py-3 font-primary text-xl uppercase text-white transition hover:bg-[#9f3344] disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={handlePatreonLink}
-                disabled={patreonLoading}
-              >
-                {patreonLoading ? "Redirecting…" : "Link Patreon"}
-              </button>
-            </div>
-          )}
-        </section>
-
-        <section className="rounded border border-red-500/40 bg-red-950/20 p-5">
-          <h2 className="font-primary text-2xl uppercase text-red-100">Delete account</h2>
-          <p className="mt-3 text-sm leading-6 text-red-100/80">
-            This permanently deletes your account and associated data. This action cannot be undone.
-          </p>
-          <form className="mt-5 space-y-4" onSubmit={handleDeleteAccount}>
-            <label className="block text-sm text-white/80" htmlFor="delete-confirm">
-              Type <strong>DELETE</strong> to confirm
-              <input
-                id="delete-confirm"
-                type="text"
-                autoComplete="off"
-                className="mt-2 w-full rounded border border-red-500/30 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-red-400"
-                placeholder="DELETE"
-                value={deleteConfirm}
-                onChange={(event) => setDeleteConfirm(event.target.value)}
-              />
-            </label>
-            {deleteError && <ErrorMessage>{deleteError}</ErrorMessage>}
-            <button
-              type="submit"
-              className="rounded bg-red-700 px-5 py-3 font-primary text-xl uppercase text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={deleteLoading}
-            >
-              {deleteLoading ? "Deleting…" : "Delete my account"}
-            </button>
-          </form>
-        </section>
+        <Separator className="bg-white/10" />
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            type="button"
-            className="rounded bg-primary px-5 py-3 font-primary text-xl uppercase text-white transition hover:bg-[#9f3344]"
-            onClick={handleLogout}
-          >
+          <Button type="button" variant="brush" size="lg" onClick={handleLogout}>
             Logout
-          </button>
-          <Link
-            className="rounded border border-white/20 px-5 py-3 text-center font-primary text-xl uppercase text-white transition hover:bg-white/10"
-            to="/"
-          >
-            Back home
-          </Link>
+          </Button>
+          <Button asChild variant="account" size="lg">
+            <Link to="/">Back home</Link>
+          </Button>
         </div>
       </div>
     </AuthShell>

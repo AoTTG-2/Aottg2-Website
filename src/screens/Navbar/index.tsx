@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import NavbarTexture from "../../assets/images/bg-light.webp";
 import Logo from "../../assets/images/navbar-image.webp";
@@ -19,29 +19,12 @@ interface MenuItem {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ refs }) => {
-  const { scrollY } = useScroll();
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isMobile = useBreakpoint(768);
   const { isAuthenticated } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
-
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    setScrollProgress(latest);
-  });
-
-  const navbarVariants = {
-    animate: {
-      y: !isMobile && scrollProgress > 0 ? 0 : isMobile ? 0 : -200,
-      transition: {
-        type: "tween",
-        duration: 0.5,
-        ease: "easeInOut",
-      },
-    },
-  };
 
   const menuItems: MenuItem[] = [
     { name: "DEVBLOG", id: "devblog" },
@@ -84,14 +67,10 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   };
 
   return (
-    <motion.div
-      variants={navbarVariants}
-      animate="animate"
-      className="fixed top-0 z-[100] w-full"
-    >
+    <motion.div className="fixed top-0 z-[100] w-full">
       <div
         className={`w-full ${
-          isMobile ? "h-16" : "h-24"
+          isMobile ? "h-14" : "h-16"
         } px-4 md:px-8 z-50 flex justify-between items-center relative overflow-hidden shadow-lg`}
         style={{
           backgroundImage: `url(${NavbarTexture})`,
@@ -102,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
       >
         <img
           src={Logo}
-          className={`${isMobile ? "h-8" : "h-12"} w-auto flex-shrink-0 object-contain cursor-pointer`}
+          className={`${isMobile ? "h-7" : "h-10"} w-auto flex-shrink-0 object-contain cursor-pointer`}
           alt="AoTTG 2 home"
           width="453"
           height="155"

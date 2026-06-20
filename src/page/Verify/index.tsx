@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { authApi } from "../../auth/api";
+import { Button } from "../../components/ui/button";
 import { AuthShell } from "../Auth/AuthShell";
 
 type VerifyState = "loading" | "success" | "error" | "missing-token";
@@ -45,7 +46,7 @@ export default function Verify() {
   if (state === "loading") {
     return (
       <AuthShell title="Verifying…" subtitle="Please wait while we verify your email.">
-        <div className="mx-auto mt-8 h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-primary" />
+        <div className="mx-auto mt-8 h-10 w-10 animate-spin border-4 border-white/20 border-t-primary" />
       </AuthShell>
     );
   }
@@ -53,11 +54,9 @@ export default function Verify() {
   if (state === "success") {
     return (
       <AuthShell title="Email verified" subtitle="Your account is active. You can sign in now.">
-        <p className="mt-8 text-center text-sm">
-          <Link className="text-white underline" to="/login">
-            Sign in →
-          </Link>
-        </p>
+        <Button asChild variant="brush" size="lg" className="mt-8 w-full">
+          <Link to="/login">Sign in</Link>
+        </Button>
       </AuthShell>
     );
   }
@@ -65,22 +64,18 @@ export default function Verify() {
   if (state === "missing-token") {
     return (
       <AuthShell title="Invalid link" subtitle="No verification token was found in this link.">
-        <p className="mt-8 text-center text-sm">
-          <Link className="text-white underline" to="/resend-verification">
-            Request a new verification email →
-          </Link>
-        </p>
+        <Button asChild variant="account" size="account" className="mt-8">
+          <Link to="/resend-verification">Request a new verification email</Link>
+        </Button>
       </AuthShell>
     );
   }
 
   return (
     <AuthShell title="Verification failed" subtitle={error}>
-      <p className="mt-8 text-center text-sm">
-        <Link className="text-white underline" to="/resend-verification">
-          Request a new verification email →
-        </Link>
-      </p>
+      <Button asChild variant="account" size="account" className="mt-8">
+        <Link to="/resend-verification">Request a new verification email</Link>
+      </Button>
     </AuthShell>
   );
 }

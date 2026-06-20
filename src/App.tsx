@@ -1,9 +1,11 @@
-import { lazy, Suspense, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import {
   BrowserRouter as Router,
   Route,
   Routes,
   Navigate,
+  Outlet,
+  useLocation,
 } from "react-router-dom";
 import Community from "./screens/Community";
 import DevBlog from "./screens/DevBlog";
@@ -14,6 +16,7 @@ import Servers from "./screens/Servers";
 import Team from "./screens/Team";
 import StructuredData from "./components/StructuredData";
 import { AuthProvider } from "./auth/AuthProvider";
+import { AccountsTheme } from "./page/Auth/AccountsTheme";
 
 const Credits = lazy(() => import("./page/Credits"));
 const Login = lazy(() => import("./page/Login"));
@@ -24,6 +27,16 @@ const ForgotPassword = lazy(() => import("./page/ForgotPassword"));
 const ResetPassword = lazy(() => import("./page/ResetPassword"));
 const OAuthCallback = lazy(() => import("./page/OAuthCallback"));
 const Accounts = lazy(() => import("./page/Accounts"));
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   const homeRef = useRef(null);
@@ -42,47 +55,69 @@ function App() {
 
   const MainContent = () => (
     <>
-      <div ref={homeRef}>
+      <div ref={homeRef} className="scroll-mt-14 md:scroll-mt-16">
         <Landing />
       </div>
-      <div ref={devblogRef}>
+      <div ref={devblogRef} className="scroll-mt-14 md:scroll-mt-16">
         <DevBlog />
       </div>
-      <div ref={communityRef}>
+      <div ref={communityRef} className="scroll-mt-14 md:scroll-mt-16">
         <Community />
       </div>
-      <div ref={supportRef}>
+      <div ref={supportRef} className="scroll-mt-14 md:scroll-mt-16">
         <Servers />
       </div>
-      <div ref={creditsRef}>
+      <div ref={creditsRef} className="scroll-mt-14 md:scroll-mt-16">
         <Team />
       </div>
     </>
   );
 
+  const LandingLayout = () => (
+    <>
+      <Navbar refs={refs} />
+      <div className="pt-14 md:pt-16">
+        <Outlet />
+      </div>
+      <Footer />
+    </>
+  );
+
+  const AccountsLayout = () => (
+    <AccountsTheme>
+      <Navbar refs={refs} />
+      <div className="pt-14 md:pt-16">
+        <Outlet />
+      </div>
+    </AccountsTheme>
+  );
+
   return (
     <Router>
       <AuthProvider>
+        <ScrollToTop />
         <StructuredData />
-        <Navbar refs={refs} />
         <Suspense fallback={null}>
           <Routes>
-            <Route path="/" element={<MainContent />} />
-            <Route path="/credits" element={<Credits />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify" element={<Verify />} />
-            <Route path="/resend-verification" element={<ResendVerification />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/oauth-callback" element={<OAuthCallback />} />
-            <Route path="/accounts" element={<Accounts />} />
-            <Route path="/account" element={<Navigate to="/accounts" replace />} />
-            {/* Catch /Game and redirect */}
-            <Route path="/Game/*" element={<Navigate to="/" replace />} />
+            <Route element={<LandingLayout />}>
+              <Route path="/" element={<MainContent />} />
+              <Route path="/credits" element={<Credits />} />
+              {/* Catch /Game and redirect */}
+              <Route path="/Game/*" element={<Navigate to="/" replace />} />
+            </Route>
+            <Route element={<AccountsLayout />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify" element={<Verify />} />
+              <Route path="/resend-verification" element={<ResendVerification />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/oauth-callback" element={<OAuthCallback />} />
+              <Route path="/accounts" element={<Accounts />} />
+              <Route path="/account" element={<Navigate to="/accounts" replace />} />
+            </Route>
           </Routes>
         </Suspense>
-        <Footer />
       </AuthProvider>
     </Router>
   );

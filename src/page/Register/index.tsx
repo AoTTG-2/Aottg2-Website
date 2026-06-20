@@ -1,7 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { authApi } from "../../auth/api";
-import { AuthShell, BackHomeLink, ErrorMessage } from "../Auth/AuthShell";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { AuthShell, ErrorMessage, SuccessMessage } from "../Auth/AuthShell";
 import { OAuthButtons, OAuthDivider } from "../Auth/OAuthButtons";
 
 export default function Register() {
@@ -45,14 +48,16 @@ export default function Register() {
   if (success) {
     return (
       <AuthShell title="Check your email" subtitle={`We sent a verification link to ${email}.`}>
-        <div className="mt-8 rounded border border-green-500/30 bg-green-500/10 p-5 text-sm leading-6 text-green-100">
-          Click the verification link to activate your account, then sign in. If you do not see it, check your spam folder.
+        <div className="mt-8">
+          <SuccessMessage>
+            Click the verification link to activate your account, then sign in. If you do not see it, check your spam folder.
+          </SuccessMessage>
         </div>
-        <div className="mt-6 flex flex-col gap-3 text-center text-sm">
-          <Link className="text-white underline" to="/resend-verification">
+        <div className="mt-6 flex flex-col gap-3 text-center text-sm font-medium">
+          <Link className="text-neutral-950 underline underline-offset-4" to="/resend-verification">
             Resend verification email
           </Link>
-          <Link className="text-white/80 hover:text-white" to="/login">
+          <Link className="text-neutral-700 hover:text-neutral-950" to="/login">
             ← Back to sign in
           </Link>
         </div>
@@ -66,82 +71,73 @@ export default function Register() {
       <OAuthDivider />
 
       <form className="space-y-5" onSubmit={handleSubmit}>
-        <label className="block text-sm text-white/80" htmlFor="register-email">
-          Email address
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="register-email">Email address</Label>
+          <Input
             id="register-email"
             type="email"
             autoComplete="email"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
-            placeholder="you@example.com"
+            placeholder="armin.arlert@scouts.example"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
           />
-        </label>
+        </div>
 
-        <label className="block text-sm text-white/80" htmlFor="display-name">
-          Display name
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="display-name">Display name</Label>
+          <Input
             id="display-name"
             type="text"
             autoComplete="username"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
-            placeholder="Your in-game name"
+            placeholder="Sasha Blouse"
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             maxLength={25}
             required
           />
-          <span className="mt-1 block text-right text-xs text-white/40">{displayName.length}/25</span>
-        </label>
+          <span className="block text-right text-xs text-neutral-500">{displayName.length}/25</span>
+        </div>
 
-        <label className="block text-sm text-white/80" htmlFor="register-password">
-          Password
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="register-password">Password</Label>
+          <Input
             id="register-password"
             type="password"
             autoComplete="new-password"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
             placeholder="At least 8 characters"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
           />
-        </label>
+        </div>
 
-        <label className="block text-sm text-white/80" htmlFor="confirm-password">
-          Confirm password
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="confirm-password">Confirm password</Label>
+          <Input
             id="confirm-password"
             type="password"
             autoComplete="new-password"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
             placeholder="Repeat password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             required
           />
-        </label>
+        </div>
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <button
-          type="submit"
-          className="w-full rounded bg-primary px-4 py-3 font-primary text-xl uppercase text-white transition hover:bg-[#9f3344] disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-        >
+        <Button type="submit" variant="brush" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Creating account…" : "Create account"}
-        </button>
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-white/60">
+      <p className="mt-6 text-center text-sm font-medium text-neutral-600">
         Already have an account?{" "}
-        <Link className="text-white underline" to="/login">
+        <Link className="text-neutral-950 underline underline-offset-4" to="/login">
           Sign in
         </Link>
       </p>
-      <BackHomeLink />
     </AuthShell>
   );
 }

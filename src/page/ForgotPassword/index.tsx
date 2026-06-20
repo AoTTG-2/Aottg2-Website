@@ -1,6 +1,9 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { authApi } from "../../auth/api";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
 
 export default function ForgotPassword() {
@@ -28,7 +31,7 @@ export default function ForgotPassword() {
     return (
       <AuthShell title="Check your email" subtitle={`If an account exists for ${email}, a password reset link was sent.`}>
         <p className="mt-8 text-center text-sm">
-          <Link className="text-white underline" to="/login">
+          <Link className="text-neutral-950 underline underline-offset-4" to="/login">
             ← Back to sign in
           </Link>
         </p>
@@ -39,33 +42,28 @@ export default function ForgotPassword() {
   return (
     <AuthShell title="Forgot password" subtitle="Enter your email and we will send a reset link if an account exists.">
       <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-        <label className="block text-sm text-white/80" htmlFor="forgot-email">
-          Email address
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="forgot-email">Email address</Label>
+          <Input
             id="forgot-email"
             type="email"
             autoComplete="email"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
-            placeholder="you@example.com"
+            placeholder="jean.kirstein@scouts.example"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
           />
-        </label>
+        </div>
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <button
-          type="submit"
-          className="w-full rounded bg-primary px-4 py-3 font-primary text-xl uppercase text-white transition hover:bg-[#9f3344] disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-        >
+        <Button type="submit" variant="brush" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Sending…" : "Send reset link"}
-        </button>
+        </Button>
       </form>
 
       <p className="mt-6 text-center text-sm">
-        <Link className="text-white underline" to="/login">
+        <Link className="text-neutral-950 underline underline-offset-4" to="/login">
           ← Back to sign in
         </Link>
       </p>

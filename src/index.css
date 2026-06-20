@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -21,4 +23,122 @@
   src: url("/fonts/tertiary.woff2") format("woff2"),
     url("/fonts/tertiary.otf") format("opentype");
   font-display: swap;
+}
+
+@layer components {
+  @keyframes account-brush-reveal {
+    from {
+      clip-path: inset(0 100% 0 0);
+      transform: translateX(-50px);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+      transform: translateX(0);
+    }
+  }
+
+  .accounts-theme .account-brush-button {
+    position: relative;
+    isolation: isolate;
+    overflow: visible;
+    background: transparent;
+    transition-property: opacity;
+  }
+
+  .accounts-theme .account-brush-button::before {
+    content: "";
+    position: absolute;
+    inset: -8% -2%;
+    z-index: -1;
+    background-image: var(--button-brush-image);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    animation: account-brush-reveal 0.24s ease-out both;
+    animation-delay: var(--button-brush-delay, 0ms);
+    transition: transform 0.12s ease-out;
+  }
+
+  .accounts-theme .account-brush-button-content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+    transition: transform 0.12s ease-out;
+  }
+
+  .accounts-theme .account-brush-button:hover::before,
+  .accounts-theme .account-brush-button:hover .account-brush-button-content {
+    transform: translateY(-4px);
+  }
+
+  .accounts-theme .account-brush-button:active::before,
+  .accounts-theme .account-brush-button:active .account-brush-button-content {
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .accounts-theme .account-brush-button::before {
+      animation-duration: 0.01ms;
+      animation-delay: 0ms;
+    }
+  }
+
+  .accounts-theme .account-input-engraved {
+    box-shadow:
+      inset 0 2px 0 0 rgba(0, 0, 0, 0.18),
+      inset 0 1px 0 0 rgba(0, 0, 0, 0.24),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.07);
+  }
+
+  .accounts-theme .account-brush-button-google::before {
+    background: #2f6fd6;
+    -webkit-mask-image: var(--button-brush-image);
+    mask-image: var(--button-brush-image);
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+  }
+}
+
+@layer base {
+  .accounts-theme {
+    --background: 0 0% 96%;
+    --foreground: 0 0% 8%;
+    --card: 0 0% 94%;
+    --card-foreground: 0 0% 8%;
+    --primary: 350 53% 34%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 255 30% 43%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 88%;
+    --muted-foreground: 0 0% 38%;
+    --accent: 350 53% 34%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 78%;
+    --input: 0 0% 82%;
+    --ring: 350 53% 46%;
+    --radius: 0;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Barlow", system-ui, sans-serif;
+  }
+
+  .accounts-theme * {
+    border-radius: 0;
+  }
+
+  .accounts-theme input:-webkit-autofill,
+  .accounts-theme input:-webkit-autofill:hover,
+  .accounts-theme input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff;
+    box-shadow: 0 0 0 1000px #111 inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
 }

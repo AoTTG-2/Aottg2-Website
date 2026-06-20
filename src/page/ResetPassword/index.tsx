@@ -1,6 +1,9 @@
 import { FormEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { authApi } from "../../auth/api";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
 
 export default function ResetPassword() {
@@ -45,7 +48,7 @@ export default function ResetPassword() {
     return (
       <AuthShell title="Invalid link" subtitle="No reset token was found. Request a new link below.">
         <p className="mt-8 text-center text-sm">
-          <Link className="text-white underline" to="/forgot-password">
+          <Link className="text-neutral-950 underline underline-offset-4" to="/forgot-password">
             ← Request a new link
           </Link>
         </p>
@@ -57,7 +60,7 @@ export default function ResetPassword() {
     return (
       <AuthShell title="Password updated" subtitle="Your password has been reset successfully.">
         <p className="mt-8 text-center text-sm">
-          <Link className="text-white underline" to="/login">
+          <Link className="text-neutral-950 underline underline-offset-4" to="/login">
             Sign in with your new password →
           </Link>
         </p>
@@ -68,47 +71,41 @@ export default function ResetPassword() {
   return (
     <AuthShell title="Reset password" subtitle="Choose a new password for your account.">
       <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-        <label className="block text-sm text-white/80" htmlFor="new-password">
-          New password
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="new-password">New password</Label>
+          <Input
             id="new-password"
             type="password"
             autoComplete="new-password"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
             placeholder="At least 8 characters"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
           />
-        </label>
+        </div>
 
-        <label className="block text-sm text-white/80" htmlFor="confirm-new-password">
-          Confirm password
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="confirm-new-password">Confirm password</Label>
+          <Input
             id="confirm-new-password"
             type="password"
             autoComplete="new-password"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
             placeholder="Repeat password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             required
           />
-        </label>
+        </div>
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <button
-          type="submit"
-          className="w-full rounded bg-primary px-4 py-3 font-primary text-xl uppercase text-white transition hover:bg-[#9f3344] disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-        >
+        <Button type="submit" variant="brush" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Saving…" : "Set new password"}
-        </button>
+        </Button>
       </form>
 
       <p className="mt-6 text-center text-sm">
-        <Link className="text-white underline" to="/forgot-password">
+        <Link className="text-neutral-950 underline underline-offset-4" to="/forgot-password">
           ← Request a new link
         </Link>
       </p>

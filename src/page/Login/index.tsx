@@ -1,7 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { AuthShell, BackHomeLink, ErrorMessage } from "../Auth/AuthShell";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
 import { OAuthButtons, OAuthDivider } from "../Auth/OAuthButtons";
 
 export default function Login() {
@@ -44,57 +47,56 @@ export default function Login() {
       <OAuthDivider />
 
       <form className="space-y-5" onSubmit={handleSubmit}>
-        <label className="block text-sm text-white/80" htmlFor="email">
-          Email address
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="email">Email address</Label>
+          <Input
             id="email"
             type="email"
             autoComplete="email"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
-            placeholder="you@example.com"
+            placeholder="mikasa.ackerman@scouts.example"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
           />
-        </label>
+        </div>
 
-        <label className="block text-sm text-white/80" htmlFor="password">
-          Password
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
             id="password"
             type="password"
             autoComplete="current-password"
-            className="mt-2 w-full rounded border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-primary"
             placeholder="Your password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
           />
-        </label>
+        </div>
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <button
+        <Button
           type="submit"
-          className="w-full rounded bg-primary px-4 py-3 font-primary text-xl uppercase text-white transition hover:bg-[#9f3344] disabled:cursor-not-allowed disabled:opacity-60"
+          variant="brush"
+          size="lg"
+          className="w-full"
           disabled={isSubmitting || isLoading}
         >
           {isSubmitting ? "Signing in…" : "Sign in"}
-        </button>
+        </Button>
       </form>
 
-      <div className="mt-6 flex flex-wrap justify-between gap-3 text-sm text-white/60">
+      <div className="mt-6 flex flex-wrap justify-between gap-3 text-sm font-medium text-neutral-600">
         <span>
           No account?{" "}
-          <Link className="text-white underline" to="/register">
+          <Link className="text-neutral-950 underline underline-offset-4" to="/register">
             Register
           </Link>
         </span>
-        <Link className="text-white underline" to="/forgot-password">
+        <Link className="text-neutral-950 underline underline-offset-4" to="/forgot-password">
           Forgot password?
         </Link>
       </div>
-      <BackHomeLink />
     </AuthShell>
   );
 }
