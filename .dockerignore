@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+.gitignore
+.env.local
+.ocarina
+.DS_Store
+npm-debug.log*
+playwright-report
+test-results
