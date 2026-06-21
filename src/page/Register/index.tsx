@@ -1,9 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { authApi } from "../../auth/api";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
+import { Button, Input, Label } from "@aottg2/ui";
 import { AuthShell, ErrorMessage, SuccessMessage } from "../Auth/AuthShell";
 import { OAuthButtons, OAuthDivider } from "../Auth/OAuthButtons";
 
@@ -54,10 +52,10 @@ export default function Register() {
           </SuccessMessage>
         </div>
         <div className="mt-6 flex flex-col gap-3 text-center text-sm font-medium">
-          <Link className="text-neutral-950 underline underline-offset-4" to="/resend-verification">
+          <Link className="text-foreground underline underline-offset-4" to="/resend-verification">
             Resend verification email
           </Link>
-          <Link className="text-neutral-700 hover:text-neutral-950" to="/login">
+          <Link className="text-muted-foreground hover:text-foreground" to="/login">
             ← Back to sign in
           </Link>
         </div>
@@ -96,7 +94,7 @@ export default function Register() {
             maxLength={25}
             required
           />
-          <span className="block text-right text-xs text-neutral-500">{displayName.length}/25</span>
+          <span className="block text-right text-xs text-muted-foreground">{displayName.length}/25</span>
         </div>
 
         <div className="space-y-2">
@@ -127,14 +125,14 @@ export default function Register() {
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <Button type="submit" variant="brush" size="lg" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Creating account…" : "Create account"}
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm font-medium text-neutral-600">
+      <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
         Already have an account?{" "}
-        <Link className="text-neutral-950 underline underline-offset-4" to="/login">
+        <Link className="text-foreground underline underline-offset-4" to="/login">
           Sign in
         </Link>
       </p>

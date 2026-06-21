@@ -1,9 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { authApi } from "../../auth/api";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
+import { Button, Input, Label } from "@aottg2/ui";
 import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
 
 export default function ResetPassword() {
@@ -48,7 +46,7 @@ export default function ResetPassword() {
     return (
       <AuthShell title="Invalid link" subtitle="No reset token was found. Request a new link below.">
         <p className="mt-8 text-center text-sm">
-          <Link className="text-neutral-950 underline underline-offset-4" to="/forgot-password">
+          <Link className="text-foreground underline underline-offset-4" to="/forgot-password">
             ← Request a new link
           </Link>
         </p>
@@ -60,7 +58,7 @@ export default function ResetPassword() {
     return (
       <AuthShell title="Password updated" subtitle="Your password has been reset successfully.">
         <p className="mt-8 text-center text-sm">
-          <Link className="text-neutral-950 underline underline-offset-4" to="/login">
+          <Link className="text-foreground underline underline-offset-4" to="/login">
             Sign in with your new password →
           </Link>
         </p>
@@ -99,13 +97,13 @@ export default function ResetPassword() {
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        <Button type="submit" variant="brush" size="lg" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Saving…" : "Set new password"}
         </Button>
       </form>
 
       <p className="mt-6 text-center text-sm">
-        <Link className="text-neutral-950 underline underline-offset-4" to="/forgot-password">
+        <Link className="text-foreground underline underline-offset-4" to="/forgot-password">
           ← Request a new link
         </Link>
       </p>

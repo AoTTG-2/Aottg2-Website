@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { authApi } from "../../auth/api";
-import { Button } from "../../components/ui/button";
+import { Button, Spinner } from "@aottg2/ui";
 import { AuthShell } from "../Auth/AuthShell";
 
 type VerifyState = "loading" | "success" | "error" | "missing-token";
@@ -46,7 +46,7 @@ export default function Verify() {
   if (state === "loading") {
     return (
       <AuthShell title="Verifying…" subtitle="Please wait while we verify your email.">
-        <div className="mx-auto mt-8 h-10 w-10 animate-spin border-4 border-neutral-950/20 border-t-primary" />
+        <Spinner className="mx-auto mt-8" label="Verifying email" />
       </AuthShell>
     );
   }
@@ -54,7 +54,7 @@ export default function Verify() {
   if (state === "success") {
     return (
       <AuthShell title="Email verified" subtitle="Your account is active. You can sign in now.">
-        <Button asChild variant="brush" size="lg" className="mt-8 w-full">
+        <Button asChild size="lg" className="mt-8 w-full">
           <Link to="/login">Sign in</Link>
         </Button>
       </AuthShell>
@@ -64,7 +64,7 @@ export default function Verify() {
   if (state === "missing-token") {
     return (
       <AuthShell title="Invalid link" subtitle="No verification token was found in this link.">
-        <Button asChild variant="account" size="account" className="mt-8">
+        <Button asChild size="account" className="mt-8">
           <Link to="/resend-verification">Request a new verification email</Link>
         </Button>
       </AuthShell>
@@ -73,7 +73,7 @@ export default function Verify() {
 
   return (
     <AuthShell title="Verification failed" subtitle={error}>
-      <Button asChild variant="account" size="account" className="mt-8">
+      <Button asChild size="account" className="mt-8">
         <Link to="/resend-verification">Request a new verification email</Link>
       </Button>
     </AuthShell>

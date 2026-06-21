@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { authApi } from "../../auth/api";
 import type { OAuthProvider } from "../../auth/types";
-import { Button } from "../../components/ui/button";
-import { Separator } from "../../components/ui/separator";
+import { Button, Separator } from "@aottg2/ui";
 
 const providerLabels: Record<OAuthProvider, string> = {
   discord: "Discord",
@@ -65,7 +64,7 @@ export function OAuthButtons({ disabled = false, onError }: OAuthButtonsProps) {
     <div className="space-y-3">
       <Button
         type="button"
-        variant="brushSecondary"
+        variant="secondary"
         size="account"
         disabled={disabled || loadingProvider !== null}
         onClick={() => handleOAuth("discord")}
@@ -75,8 +74,8 @@ export function OAuthButtons({ disabled = false, onError }: OAuthButtonsProps) {
       </Button>
       <Button
         type="button"
-        variant="brushGoogle"
         size="account"
+        className="bg-[#2f6fd6] text-white hover:bg-[#2f6fd6]/90"
         disabled={disabled || loadingProvider !== null}
         onClick={() => handleOAuth("google")}
       >
@@ -89,10 +88,10 @@ export function OAuthButtons({ disabled = false, onError }: OAuthButtonsProps) {
 
 export function OAuthDivider() {
   return (
-    <div className="my-5 flex items-center gap-4 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-      <Separator className="flex-1 bg-black/10" />
+    <div className="my-5 flex items-center gap-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <Separator className="flex-1" />
       or
-      <Separator className="flex-1 bg-black/10" />
+      <Separator className="flex-1" />
     </div>
   );
 }

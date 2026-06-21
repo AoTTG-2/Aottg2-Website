@@ -1,9 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
+import { Button, Input, Label } from "@aottg2/ui";
 import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
 import { OAuthButtons, OAuthDivider } from "../Auth/OAuthButtons";
 
@@ -77,7 +75,6 @@ export default function Login() {
 
         <Button
           type="submit"
-          variant="brush"
           size="lg"
           className="w-full"
           disabled={isSubmitting || isLoading}
@@ -86,14 +83,14 @@ export default function Login() {
         </Button>
       </form>
 
-      <div className="mt-6 flex flex-wrap justify-between gap-3 text-sm font-medium text-neutral-600">
+      <div className="mt-6 flex flex-wrap justify-between gap-3 text-sm font-medium text-muted-foreground">
         <span>
           No account?{" "}
-          <Link className="text-neutral-950 underline underline-offset-4" to="/register">
+          <Link className="text-foreground underline underline-offset-4" to="/register">
             Register
           </Link>
         </span>
-        <Link className="text-neutral-950 underline underline-offset-4" to="/forgot-password">
+        <Link className="text-foreground underline underline-offset-4" to="/forgot-password">
           Forgot password?
         </Link>
       </div>

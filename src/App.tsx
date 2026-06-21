@@ -18,6 +18,7 @@ import StructuredData from "./components/StructuredData";
 import { AuthProvider } from "./auth/AuthProvider";
 import { NAVBAR_OFFSET_CLASS, NAVBAR_SCROLL_MARGIN_CLASS } from "./data/layout";
 import { AccountsTheme } from "./page/Auth/AccountsTheme";
+import { AuthNavbar } from "./page/Auth/AuthNavbar";
 
 const Credits = lazy(() => import("./page/Credits"));
 const Login = lazy(() => import("./page/Login"));
@@ -86,7 +87,7 @@ function App() {
 
   const AccountsLayout = () => (
     <AccountsTheme>
-      <Navbar refs={refs} />
+      <AuthNavbar />
       <div className={NAVBAR_OFFSET_CLASS}>
         <Outlet />
       </div>

@@ -3,7 +3,6 @@ import { test, expect } from '@playwright/test';
 const email = process.env['AOTTG2_TEST_EMAIL'] ?? '';
 const password = process.env['AOTTG2_TEST_PASSWORD'] ?? '';
 const displayName = process.env['AOTTG2_TEST_DISPLAY_NAME'] ?? 'Pi Tester';
-
 const mockAuthResponse = {
   accessToken: 'mock-access-token',
   refreshToken: 'mock-refresh-token',
@@ -34,21 +33,30 @@ test('website login reaches account page and logout returns to login', async ({ 
   await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
   await expect(page.getByText('AOTTG 2 - A Fan Project')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'PLAY', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'HOME', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'ACCOUNTS' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Login' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /Switch to (Dark|Light) Mode/ })).toBeVisible();
+  await page.keyboard.press('Escape');
 
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page).toHaveURL(/\/accounts$/);
-  await expect(page.getByRole('heading', { name: new RegExp(`Welcome, ${displayName}`) })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Change display name' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Patreon' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Display name' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Delete account' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible();
   await expect(page.getByText('AOTTG 2 - A Fan Project')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'PLAY', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'HOME', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: displayName }).click();
+  await expect(page.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Logout' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /Switch to (Dark|Light) Mode/ })).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.screenshot({ path: testInfo.outputPath('account-page.png'), fullPage: true });
 
   await page.goto('http://localhost:5173/');
@@ -94,6 +102,7 @@ test('oauth callback exchanges session code and opens account page', async ({ pa
 
   await page.goto('http://localhost:5173/oauth-callback?code=mock-code');
   await expect(page).toHaveURL(/\/accounts$/);
-  await expect(page.getByRole('heading', { name: 'Welcome, OAuth Tester' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'OAuth Tester' })).toBeVisible();
   await expect(page.getByText('oauth@example.test')).toBeVisible();
 });

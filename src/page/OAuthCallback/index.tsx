@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../auth/api";
 import { useAuth } from "../../auth/useAuth";
-import { Button } from "../../components/ui/button";
+import { Button, Spinner } from "@aottg2/ui";
 import { AuthShell } from "../Auth/AuthShell";
 
 export default function OAuthCallback() {
@@ -53,7 +53,7 @@ export default function OAuthCallback() {
   if (error) {
     return (
       <AuthShell title="Sign-in failed" subtitle={error}>
-        <Button asChild variant="brush" size="lg" className="mt-8 w-full">
+        <Button asChild size="lg" className="mt-8 w-full">
           <Link to="/login">Back to sign in</Link>
         </Button>
       </AuthShell>
@@ -62,7 +62,7 @@ export default function OAuthCallback() {
 
   return (
     <AuthShell title="Signing you in…" subtitle="Completing OAuth sign-in.">
-      <div className="mx-auto mt-8 h-10 w-10 animate-spin border-4 border-neutral-950/20 border-t-primary" />
+      <Spinner className="mx-auto mt-8" label="Signing in" />
     </AuthShell>
   );
 }
