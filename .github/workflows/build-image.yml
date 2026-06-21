@@ -5,6 +5,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      show_login_nav:
+        description: "Show login/account navbar links in the built website"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: read
@@ -20,6 +29,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Determine build config
+        id: config
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_SHOW_LOGIN_NAV: ${{ inputs.show_login_nav }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            SHOW_LOGIN_NAV="$DISPATCH_SHOW_LOGIN_NAV"
+          else
+            SHOW_LOGIN_NAV="true"
+          fi
+
+          echo "show_login_nav=$SHOW_LOGIN_NAV" >> "$GITHUB_OUTPUT"
+
+          {
+            echo 'tags<<EOF'
+            echo "${IMAGE_NAME}:${GITHUB_SHA}"
+            if [ "$SHOW_LOGIN_NAV" = "false" ]; then
+              echo "${IMAGE_NAME}:main-no-login"
+            else
+              echo "${IMAGE_NAME}:main"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -37,7 +73,7 @@ jobs:
         run: npm run build
         env:
           VITE_AUTH_API_BASE_URL: ""
-          SHOW_LOGIN_NAV: "true"
+          SHOW_LOGIN_NAV: ${{ steps.config.outputs.show_login_nav }}
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -57,10 +93,8 @@ jobs:
           push: true
           build-args: |
             VITE_AUTH_API_BASE_URL=
-            SHOW_LOGIN_NAV=true
-          tags: |
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.IMAGE_NAME }}:main
+            SHOW_LOGIN_NAV=${{ steps.config.outputs.show_login_nav }}
+          tags: ${{ steps.config.outputs.tags }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
