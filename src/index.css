@@ -59,3 +59,10 @@
     background: hsl(var(--ring));
   }
 }
+
+@layer components {
+  .admin-data-table > .relative.w-full.overflow-auto {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}

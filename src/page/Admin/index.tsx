@@ -364,7 +364,7 @@ function PillMultiSelect({
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <div
           role="combobox"
@@ -1063,7 +1063,7 @@ export default function Admin() {
                   ) : usersError ? (
                     <EmptyState title="Could not load users" description={usersError} action={<Button type="button" onClick={refetchUsers}>Try again</Button>} />
                   ) : (
-                    <DataTable columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No users found" emptyDescription="Try another search or filter." />
+                    <DataTable className="admin-data-table" columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No users found" emptyDescription="Try another search or filter." />
                   )}
                 </CardContent>
               </Card>
@@ -1220,7 +1220,7 @@ export default function Admin() {
                   ) : auditsError ? (
                     <EmptyState title="Could not load audit logs" description={auditsError} action={<Button type="button" onClick={refetchAudits}>Try again</Button>} />
                   ) : (
-                    <DataTable columns={auditColumns} data={auditEvents} getRowKey={(event) => event.id} emptyTitle="No audit events" emptyDescription="Try another event type filter." />
+                    <DataTable className="admin-data-table" columns={auditColumns} data={auditEvents} getRowKey={(event) => event.id} emptyTitle="No audit events" emptyDescription="Try another event type filter." />
                   )}
                 </CardContent>
               </Card>
