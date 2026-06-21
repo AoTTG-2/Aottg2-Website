@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@aottg2/ui";
+import { ADMIN_ACCESS_PERMISSIONS } from "../../auth/adminPermissions";
 import { useAuth } from "../../auth/useAuth";
 import { useAccountsTheme } from "./accounts-theme-context";
 
@@ -48,6 +49,7 @@ export function AuthNavbar() {
   const { theme, toggleTheme } = useAccountsTheme();
   const nextTheme = theme === "dark" ? "light" : "dark";
   const isAdmin = profile?.roles.includes("admin") ?? false;
+  const canAccessAdmin = isAdmin || ADMIN_ACCESS_PERMISSIONS.some((permission) => profile?.permissions?.includes(permission));
   const accountsActive = location.pathname === "/accounts" || location.pathname === "/login" || location.pathname === "/admin";
   const accountLabel = isAuthenticated && profile?.displayName ? profile.displayName : "ACCOUNTS";
   const logoText = location.pathname.startsWith("/admin") ? "ADMIN" : location.pathname.startsWith("/account") ? "SETTINGS" : "LOGIN";
@@ -111,7 +113,7 @@ export function AuthNavbar() {
                   <Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>
                   {isAuthenticated ? "Settings" : "Login"}
                 </MenuItem>
-                {isAdmin && (
+                {canAccessAdmin && (
                   <MenuItem onClick={goAdmin}>
                     <Icon><SettingsIcon /></Icon>
                     Admin Panel

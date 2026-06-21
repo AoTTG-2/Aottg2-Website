@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Aottg2LogoLight, cn } from "@aottg2/ui";
 import NavbarTexture from "../../assets/images/bg-light.webp";
 import Logo from "../../assets/images/navbar-image.webp";
+import { ADMIN_ACCESS_PERMISSIONS } from "../../auth/adminPermissions";
 import { useAuth } from "../../auth/useAuth";
 import { NAVBAR_HEIGHT_CLASS, NAVBAR_LOGO_HEIGHT_CLASS } from "../../data/layout";
 import { getInitialTheme, saveTheme } from "../../utils/theme";
@@ -65,6 +66,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   const location = useLocation();
   const nextTheme = theme === "dark" ? "light" : "dark";
   const isAdmin = profile?.roles.includes("admin") ?? false;
+  const canAccessAdmin = isAdmin || ADMIN_ACCESS_PERMISSIONS.some((permission) => profile?.permissions?.includes(permission));
   const accountLabel = isAuthenticated ? profile?.displayName ?? "ACCOUNTS" : "ACCOUNTS";
   const menuItems: MenuItem[] = [
     { name: "DEVBLOG", id: "devblog" },
@@ -164,7 +166,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
                 <div className="invisible fixed right-8 top-10 z-[1002] w-56 opacity-0 transition-[opacity,transform,visibility] duration-150 ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                   <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content overflow-hidden rounded-none border border-border bg-popover p-1 text-popover-foreground shadow-md", theme)}>
                     <AccountMenuItem onClick={goSettings}><Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>{isAuthenticated ? "Settings" : "Login"}</AccountMenuItem>
-                    {isAdmin && <AccountMenuItem onClick={goAdmin}><Icon><SettingsIcon /></Icon>Admin Panel</AccountMenuItem>}
+                    {canAccessAdmin && <AccountMenuItem onClick={goAdmin}><Icon><SettingsIcon /></Icon>Admin Panel</AccountMenuItem>}
                     {isAuthenticated && <AccountMenuItem onClick={handleLogout}><Icon><LogoutIcon /></Icon>Logout</AccountMenuItem>}
                     <div className="-mx-1 my-1 h-px bg-muted" role="separator" />
                     <div className="aottg2-texture aottg2-texture-primary -mx-1 -mt-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wide text-primary-foreground">Appearance</div>
@@ -190,7 +192,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
             </button>
           ))}
           {SHOW_LOGIN_NAV && <button onClick={goSettings} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Settings</button>}
-          {isAdmin && <button onClick={goAdmin} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Admin Panel</button>}
+          {canAccessAdmin && <button onClick={goAdmin} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Admin Panel</button>}
           {isAuthenticated && <button onClick={handleLogout} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">↪ Logout</button>}
           <button onClick={toggleTheme} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode</button>
         </motion.div>

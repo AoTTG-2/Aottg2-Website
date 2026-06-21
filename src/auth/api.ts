@@ -2,6 +2,7 @@ import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "./stora
 import type {
   AccountRolesResponse,
   AdminAccountDetailResponse,
+  AdminAccountFilters,
   AdminAccountListResponse,
   ApiResult,
   AuditEventListResponse,
@@ -145,9 +146,15 @@ export const authApi = {
   patreonUnlink: () =>
     request<ErrorResponse>("/patreon/link", { method: "DELETE" }),
 
-  listAdminAccounts: (search: string, page: number, pageSize: number, signal?: AbortSignal) => {
+  listAdminAccounts: (search: string, page: number, pageSize: number, filters?: AdminAccountFilters, signal?: AbortSignal) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (search.trim()) params.set("search", search.trim());
+    if (filters?.displayName.trim()) params.set("displayName", filters.displayName.trim());
+    if (filters?.emailVerified === "verified") params.set("emailVerified", "true");
+    if (filters?.emailVerified === "unverified") params.set("emailVerified", "false");
+    filters?.roles.forEach((role) => {
+      if (role.trim()) params.append("roles", role.trim());
+    });
     return request<AdminAccountListResponse & ErrorResponse>(`/admin/accounts?${params}`, { signal });
   },
 

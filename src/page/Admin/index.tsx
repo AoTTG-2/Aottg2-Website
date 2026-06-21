@@ -59,8 +59,11 @@ import {
   toast,
 } from "@aottg2/ui";
 import { authApi } from "../../auth/api";
+import { ADMIN_ACCESS_PERMISSIONS } from "../../auth/adminPermissions";
 import { useAuth } from "../../auth/useAuth";
-import type { AdminAccountDetailResponse, AuditEventResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
+import type { AdminAccountDetailResponse, AdminAccountFilters, AuditEventResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
+import { UserFilterSettings } from "./UserFilterSettings";
+import { EMPTY_USER_FILTERS } from "./userFilters";
 
 type AdminSection = "overview" | "users" | "roles" | "permissions" | "audits";
 
@@ -71,6 +74,8 @@ type ActionMenuItem = {
 };
 
 function ActionMenu({ items }: { items: ActionMenuItem[] }) {
+  if (!items.length) return null;
+
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
@@ -90,8 +95,230 @@ function ActionMenu({ items }: { items: ActionMenuItem[] }) {
   );
 }
 
+type AuditViewMode = "readable" | "technical";
+type AuditAccountSummary = NonNullable<AuditEventResponse["actor"]>;
+type AuditAccountLookup = Record<string, AuditAccountSummary>;
+type AuditMetadata = Record<string, unknown>;
+
 function formatDate(value?: string) {
-  return value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value)) : "—";
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
+}
+
+function formatAuditTimestamp(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseAuditMetadata(metadataJson?: string | null): AuditMetadata {
+  if (!metadataJson) return {};
+
+  try {
+    const parsed: unknown = JSON.parse(metadataJson);
+    return isRecord(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function getMetadataString(metadata: AuditMetadata, key: string) {
+  const value = metadata[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function formatAuditAccount(account?: AuditAccountSummary | null, fallbackName = "Unknown user") {
+  if (!account) return fallbackName;
+  const displayName = account.displayName?.trim();
+  const email = account.email?.trim();
+
+  if (displayName && email) return `${displayName} (${email})`;
+  return email || displayName || fallbackName;
+}
+
+function getAuditMetadataDisplayName(metadata: AuditMetadata) {
+  const after = isRecord(metadata.after) ? metadata.after : null;
+  const before = isRecord(metadata.before) ? metadata.before : null;
+  const afterName = after ? getMetadataString(after, "DisplayName") ?? getMetadataString(after, "displayName") : undefined;
+  const beforeName = before ? getMetadataString(before, "DisplayName") ?? getMetadataString(before, "displayName") : undefined;
+  return afterName ?? beforeName;
+}
+
+function getAuditLookupAccount(accountId: string | null | undefined, accountLookup: AuditAccountLookup) {
+  return accountId && accountId !== "system" ? accountLookup[accountId] : undefined;
+}
+
+function formatAuditActor(event: AuditEventResponse, accountLookup: AuditAccountLookup) {
+  if (event.actor) return formatAuditAccount(event.actor);
+  const lookupAccount = getAuditLookupAccount(event.actorAccountId, accountLookup);
+  if (lookupAccount) return formatAuditAccount(lookupAccount);
+  return !event.actorAccountId || event.actorAccountId === "system" ? "System" : "Unknown user";
+}
+
+function formatAuditTarget(event: AuditEventResponse, metadata: AuditMetadata, accountLookup: AuditAccountLookup) {
+  if (event.target) return formatAuditAccount(event.target);
+  const lookupAccount = getAuditLookupAccount(event.targetAccountId, accountLookup);
+  if (lookupAccount) return formatAuditAccount(lookupAccount);
+  if (event.targetAccountId === "system") return "System";
+  return getAuditMetadataDisplayName(metadata) ?? "Unknown user";
+}
+
+function formatAuditFieldName(key: string) {
+  const labels: Record<string, string> = {
+    DisplayName: "display name",
+    displayName: "display name",
+    EmailVerified: "email status",
+    emailVerified: "email status",
+  };
+
+  return labels[key] ?? key.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").toLowerCase();
+}
+
+function formatAuditValue(key: string, value: unknown) {
+  if ((key === "EmailVerified" || key === "emailVerified") && typeof value === "boolean") {
+    return value ? "verified" : "unverified";
+  }
+
+  if (typeof value === "string") return value || "empty";
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (value === null || value === undefined) return "empty";
+  return JSON.stringify(value) ?? String(value);
+}
+
+function AuditName({ children }: { children: ReactNode }) {
+  return <strong className="font-semibold text-foreground">{children}</strong>;
+}
+
+function AuditAction({ children, tone = "neutral" }: { children: ReactNode; tone?: "added" | "removed" | "neutral" }) {
+  const className = tone === "removed"
+    ? "font-semibold text-destructive"
+    : tone === "added"
+      ? "font-semibold text-emerald-500 dark:text-emerald-400"
+      : "font-semibold text-primary";
+
+  return <span className={className}>{children}</span>;
+}
+
+function AuditValue({ children, tone = "neutral" }: { children: ReactNode; tone?: "before" | "after" | "neutral" }) {
+  const className = tone === "before"
+    ? "rounded-md bg-muted px-1.5 py-0.5 font-medium text-muted-foreground"
+    : tone === "after"
+      ? "rounded-md bg-primary/10 px-1.5 py-0.5 font-semibold text-primary"
+      : "font-semibold text-foreground";
+
+  return <span className={className}>{children}</span>;
+}
+
+function AuditRolePill({ role, roles, tone = "added" }: { role: string; roles: RoleResponse[]; tone?: "added" | "removed" }) {
+  return <Badge variant={tone === "removed" ? "destructive" : roleVariant(role)} className="align-middle">{roleLabel(role, roles)}</Badge>;
+}
+
+function renderAuditChanges(metadata: AuditMetadata) {
+  const before = isRecord(metadata.before) ? metadata.before : null;
+  const after = isRecord(metadata.after) ? metadata.after : null;
+  if (!before || !after) return null;
+
+  const changes = Object.keys(after).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
+  if (!changes.length) return null;
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <span className="text-muted-foreground">:</span>
+      {changes.map((key, index) => (
+        <span key={key} className="inline-flex flex-wrap items-center gap-1.5">
+          {index > 0 ? <span className="text-muted-foreground">,</span> : null}
+          <AuditValue>{formatAuditFieldName(key)}</AuditValue>
+          <span>changed from</span>
+          <AuditValue tone="before">{formatAuditValue(key, before[key])}</AuditValue>
+          <span>to</span>
+          <AuditValue tone="after">{formatAuditValue(key, after[key])}</AuditValue>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function renderAuditActivity(event: AuditEventResponse, roles: RoleResponse[], accountLookup: AuditAccountLookup = {}) {
+  const metadata = parseAuditMetadata(event.metadataJson);
+  const actor = formatAuditActor(event, accountLookup);
+  const target = formatAuditTarget(event, metadata, accountLookup);
+  const contentClassName = "inline-flex flex-wrap items-center gap-1.5 leading-7";
+
+  switch (event.eventType) {
+    case "admin.user_role_assigned": {
+      const role = getMetadataString(metadata, "role");
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction tone="added">added</AuditAction>
+          {role ? <AuditRolePill role={role} roles={roles} /> : <AuditValue>a role</AuditValue>}
+          <span>to</span>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+    }
+    case "admin.user_role_removed": {
+      const role = getMetadataString(metadata, "role");
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction tone="removed">removed</AuditAction>
+          {role ? <AuditRolePill role={role} roles={roles} tone="removed" /> : <AuditValue>a role</AuditValue>}
+          <span>from</span>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+    }
+    case "admin.user_updated":
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction>updated</AuditAction>
+          <AuditName>{target}</AuditName>
+          {renderAuditChanges(metadata)}
+        </span>
+      );
+    case "account.registered":
+      return (
+        <span className={contentClassName}>
+          <AuditName>{target}</AuditName>
+          <AuditAction tone="added">registered</AuditAction>
+          <span>an account</span>
+        </span>
+      );
+    case "account.email_verified":
+      return (
+        <span className={contentClassName}>
+          <AuditName>{target}</AuditName>
+          <AuditAction tone="added">verified</AuditAction>
+          <span>their email</span>
+        </span>
+      );
+    case "account.admin_bootstrapped":
+      return (
+        <span className={contentClassName}>
+          <AuditName>System</AuditName>
+          <AuditAction tone="added">bootstrapped</AuditAction>
+          <span>admin account</span>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+    default:
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <span>performed</span>
+          <Badge variant="outline">{event.eventType}</Badge>
+          <span>on</span>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+  }
 }
 
 function roleVariant(role: string): BadgeVariant {
@@ -235,6 +462,26 @@ export default function Admin() {
   const navigate = useNavigate();
   const { profile, isAuthenticated, isLoading } = useAuth();
   const isAdmin = profile?.roles.includes("admin") ?? false;
+  const permissionSet = new Set(profile?.permissions ?? []);
+  const can = (permission: string) => isAdmin || permissionSet.has(permission);
+  const canAny = (...permissions: string[]) => permissions.some(can);
+  const canAccessAdmin = canAny(...ADMIN_ACCESS_PERMISSIONS);
+  const canReadUsers = can("users.read");
+  const canUpdateUsers = can("users.update");
+  const canDeleteUsers = can("users.delete");
+  const canAssignUserRoles = can("users.roles.assign");
+  const canRemoveUserRoles = can("users.roles.remove");
+  const canManageUserRoles = can("users.roles.read") && (canAssignUserRoles || canRemoveUserRoles);
+  const canReadRoles = can("roles.read");
+  const canCreateRoles = can("roles.create");
+  const canUpdateRoles = can("roles.update");
+  const canDeleteRoles = can("roles.delete");
+  const canReadRolePermissions = can("roles.permissions.read");
+  const canUpdateRolePermissions = can("roles.permissions.update");
+  const canUpdateSystemRoles = can("roles.system.update");
+  const canDeleteSystemRoles = can("roles.system.delete");
+  const canReadPermissions = can("permissions.read");
+  const canReadAudits = can("audits.read");
   const [section, setSection] = useState<AdminSection>("overview");
   const [roles, setRoles] = useState<RoleResponse[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -253,12 +500,15 @@ export default function Admin() {
   const [auditsPage, setAuditsPage] = useState(1);
   const [auditsPageSize, setAuditsPageSize] = useState(50);
   const [auditsRefreshKey, setAuditsRefreshKey] = useState(0);
+  const [auditViewMode, setAuditViewMode] = useState<AuditViewMode>("readable");
+  const [auditAccountLookup, setAuditAccountLookup] = useState<AuditAccountLookup>({});
   const [users, setUsers] = useState<ProfileResponse[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState("");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [userFilters, setUserFilters] = useState<AdminAccountFilters>(EMPTY_USER_FILTERS);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -282,12 +532,25 @@ export default function Admin() {
 
   const pageCount = Math.max(1, Math.ceil(totalUsers / pageSize));
   const auditsPageCount = Math.max(1, Math.ceil(auditsTotal / auditsPageSize));
+  const sectionItems: Array<{ id: AdminSection; label: string; icon: ReactNode; visible: boolean }> = [
+    { id: "overview", label: "Overview", icon: <FiGrid />, visible: canAccessAdmin },
+    { id: "users", label: "Users", icon: <FiUsers />, visible: canReadUsers },
+    { id: "roles", label: "Roles", icon: <FiShield />, visible: canReadRoles },
+    { id: "permissions", label: "Permissions", icon: <FiKey />, visible: canReadPermissions },
+    { id: "audits", label: "Audit logs", icon: <FiFileText />, visible: canReadAudits },
+  ];
+  const visibleSectionItems = sectionItems.filter((item) => item.visible);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate("/login", { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
+
+  useEffect(() => {
+    if (!canAccessAdmin || visibleSectionItems.some((item) => item.id === section)) return;
+    setSection(visibleSectionItems[0]?.id ?? "overview");
+  }, [canAccessAdmin, section, visibleSectionItems]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -308,7 +571,7 @@ export default function Admin() {
   }, [auditEventType]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canReadRoles) return;
 
     setRolesLoading(true);
     setRolesError("");
@@ -323,10 +586,10 @@ export default function Admin() {
       setRolesError("Could not load roles.");
       toast.error("Could not load roles");
     }).finally(() => setRolesLoading(false));
-  }, [isAdmin, rolesRefreshKey]);
+  }, [canReadRoles, rolesRefreshKey]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canReadPermissions) return;
 
     setPermissionsLoading(true);
     setPermissionsError("");
@@ -341,16 +604,16 @@ export default function Admin() {
       setPermissionsError("Could not load permissions.");
       toast.error("Could not load permissions");
     }).finally(() => setPermissionsLoading(false));
-  }, [isAdmin, permissionsRefreshKey]);
+  }, [canReadPermissions, permissionsRefreshKey]);
 
   useEffect(() => {
-    if (!isAdmin || section !== "users") return;
+    if (!canReadUsers || section !== "users") return;
 
     const controller = new AbortController();
     setUsersLoading(true);
     setUsersError("");
 
-    authApi.listAdminAccounts(debouncedSearch, page, pageSize, controller.signal)
+    authApi.listAdminAccounts(debouncedSearch, page, pageSize, userFilters, controller.signal)
       .then(({ ok, data }) => {
         if (controller.signal.aborted) return;
         if (ok) {
@@ -370,10 +633,10 @@ export default function Admin() {
       });
 
     return () => controller.abort();
-  }, [debouncedSearch, isAdmin, page, pageSize, refreshKey, section]);
+  }, [canReadUsers, debouncedSearch, page, pageSize, refreshKey, section, userFilters]);
 
   useEffect(() => {
-    if (!isAdmin || section !== "audits") return;
+    if (!canReadAudits || section !== "audits") return;
 
     const controller = new AbortController();
     setAuditsLoading(true);
@@ -399,7 +662,53 @@ export default function Admin() {
       });
 
     return () => controller.abort();
-  }, [auditsPage, auditsPageSize, auditsRefreshKey, debouncedAuditEventType, isAdmin, section]);
+  }, [auditsPage, auditsPageSize, auditsRefreshKey, canReadAudits, debouncedAuditEventType, section]);
+
+  useEffect(() => {
+    if (!canReadUsers || !canReadAudits || section !== "audits" || !auditEvents.length) return;
+
+    const accountIds = new Set<string>();
+    for (const event of auditEvents) {
+      if (!event.actor && event.actorAccountId && event.actorAccountId !== "system" && !auditAccountLookup[event.actorAccountId]) {
+        accountIds.add(event.actorAccountId);
+      }
+      if (!event.target && event.targetAccountId && event.targetAccountId !== "system" && !auditAccountLookup[event.targetAccountId]) {
+        accountIds.add(event.targetAccountId);
+      }
+    }
+
+    if (!accountIds.size) return;
+
+    let cancelled = false;
+    Promise.allSettled(Array.from(accountIds).map(async (accountId) => {
+      const { ok, data } = await authApi.getAdminAccount(accountId);
+      if (!ok) return null;
+      return { accountId: data.accountId, displayName: data.displayName, email: data.email } satisfies AuditAccountSummary;
+    })).then((results) => {
+      if (cancelled) return;
+      const nextLookup: AuditAccountLookup = {};
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value) {
+          nextLookup[result.value.accountId] = result.value;
+        }
+      }
+      if (Object.keys(nextLookup).length) {
+        setAuditAccountLookup((current) => ({ ...current, ...nextLookup }));
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [auditAccountLookup, auditEvents, canReadAudits, canReadUsers, section]);
+
+  function applyUserFilters(filters: AdminAccountFilters) {
+    setUserFilters(filters);
+    setPage(1);
+  }
+
+  function resetUserFilters() {
+    setUserFilters(EMPTY_USER_FILTERS);
+    setPage(1);
+  }
 
   function refetchUsers() {
     setRefreshKey((current) => current + 1);
@@ -442,7 +751,7 @@ export default function Admin() {
       const body = {
         displayName: roleDisplayName.trim() || undefined,
         description: roleDescription.trim() || undefined,
-        permissions: rolePermissions,
+        ...(canUpdateRolePermissions ? { permissions: rolePermissions } : {}),
       };
       const result = roleFormMode === "create"
         ? await authApi.createRole({ name: roleName.trim(), ...body })
@@ -545,8 +854,8 @@ export default function Admin() {
 
     setActionLoading(true);
     try {
-      const toAdd = roleDraft.filter((role) => !assignUser.roles.includes(role));
-      const toRemove = assignUser.roles.filter((role) => !roleDraft.includes(role));
+      const toAdd = canAssignUserRoles ? roleDraft.filter((role) => !assignUser.roles.includes(role)) : [];
+      const toRemove = canRemoveUserRoles ? assignUser.roles.filter((role) => !roleDraft.includes(role)) : [];
 
       for (const role of toRemove) {
         const { ok, data } = await authApi.removeRole(assignUser.accountId, role);
@@ -611,22 +920,37 @@ export default function Admin() {
       className: "w-12",
       cell: (user: ProfileResponse) => (
         <ActionMenu items={[
-          { label: "View details", onSelect: () => void viewDetails(user) },
-          { label: "Edit profile", onSelect: () => openEdit(user) },
-          { label: "Manage roles", onSelect: () => openAssign(user) },
-          { label: "Delete account", onSelect: () => setDeleteUser(user), destructive: true },
-        ].filter((item) => item.label !== "Delete account" || user.accountId !== profile?.accountId)} />
+          canReadUsers ? { label: "View details", onSelect: () => void viewDetails(user) } : null,
+          canUpdateUsers ? { label: "Edit profile", onSelect: () => openEdit(user) } : null,
+          canManageUserRoles ? { label: "Manage roles", onSelect: () => openAssign(user) } : null,
+          canDeleteUsers && user.accountId !== profile?.accountId ? { label: "Delete account", onSelect: () => setDeleteUser(user), destructive: true } : null,
+        ].filter((item): item is ActionMenuItem => item !== null)} />
       ),
     },
   ];
 
-  const auditColumns = [
+  const readableAuditColumns = [
+    {
+      key: "timestamp",
+      header: "Timestamp",
+      cell: (event: AuditEventResponse) => <span className="whitespace-nowrap tabular-nums">{formatAuditTimestamp(event.createdAt)}</span>,
+    },
+    {
+      key: "activity",
+      header: "Activity",
+      cell: (event: AuditEventResponse) => <div className="text-sm text-foreground">{renderAuditActivity(event, roles, auditAccountLookup)}</div>,
+    },
+  ];
+
+  const technicalAuditColumns = [
     { key: "created", header: "Created", cell: (event: AuditEventResponse) => formatDate(event.createdAt) },
     { key: "event", header: "Event", cell: (event: AuditEventResponse) => <Badge variant="outline">{event.eventType}</Badge> },
     { key: "actor", header: "Actor", cell: (event: AuditEventResponse) => <span className="font-mono text-xs">{event.actorAccountId ?? "system"}</span> },
     { key: "target", header: "Target", cell: (event: AuditEventResponse) => <span className="font-mono text-xs">{event.targetAccountId ?? "—"}</span> },
     { key: "metadata", header: "Metadata", cell: (event: AuditEventResponse) => <span className="break-all font-mono text-xs text-muted-foreground">{event.metadataJson ?? "—"}</span> },
   ];
+
+  const auditColumns = auditViewMode === "readable" ? readableAuditColumns : technicalAuditColumns;
 
   const oauthLinks = detail?.oAuthLinks ?? (detail as unknown as { oauthLinks?: AdminAccountDetailResponse["oAuthLinks"] } | null)?.oauthLinks ?? [];
   const permissionGroups = permissions.reduce<Record<string, PermissionResponse[]>>((groups, permission) => {
@@ -642,13 +966,13 @@ export default function Admin() {
     );
   }
 
-  if (!isAdmin) {
+  if (!canAccessAdmin) {
     return (
       <main className="relative z-10 mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-2xl items-center bg-background px-6 py-12 lg:min-h-[calc(100vh-4rem)]">
         <Card className="w-full border-border bg-card text-card-foreground">
           <CardHeader>
             <CardTitle>Access denied</CardTitle>
-            <CardDescription>Admin role required.</CardDescription>
+            <CardDescription>Admin or moderator permissions required.</CardDescription>
           </CardHeader>
           <CardContent>
             <Button type="button" onClick={() => navigate("/accounts")}>Back to account</Button>
@@ -667,11 +991,9 @@ export default function Admin() {
             <div className="ml-auto"><SidebarToggle /></div>
           </SidebarHeader>
           <SidebarSection title="Panel">
-            <SidebarItem icon={<FiGrid />} active={section === "overview"} onClick={() => setSection("overview")}>Overview</SidebarItem>
-            <SidebarItem icon={<FiUsers />} active={section === "users"} onClick={() => setSection("users")}>Users</SidebarItem>
-            <SidebarItem icon={<FiShield />} active={section === "roles"} onClick={() => setSection("roles")}>Roles</SidebarItem>
-            <SidebarItem icon={<FiKey />} active={section === "permissions"} onClick={() => setSection("permissions")}>Permissions</SidebarItem>
-            <SidebarItem icon={<FiFileText />} active={section === "audits"} onClick={() => setSection("audits")}>Audit logs</SidebarItem>
+            {visibleSectionItems.map((item) => (
+              <SidebarItem key={item.id} icon={item.icon} active={section === item.id} onClick={() => setSection(item.id)}>{item.label}</SidebarItem>
+            ))}
           </SidebarSection>
           <SidebarFooter>
             <SidebarItem icon={<FiSettings />} href="/accounts">Account settings</SidebarItem>
@@ -682,31 +1004,17 @@ export default function Admin() {
         <section className="min-w-0 flex-1 space-y-6 px-6 py-8 lg:ml-64 lg:px-8">
           {section === "overview" ? (
             <>
-              <Card className="border-border bg-card text-card-foreground">
-                <CardHeader>
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <CardTitle>Admin Panel</CardTitle>
-                      <CardDescription className="mt-2">Minimal shell. API tools come next.</CardDescription>
-                    </div>
-                    <Badge variant="textured">admin</Badge>
-                  </div>
-                </CardHeader>
-              </Card>
-
               <div className="grid gap-4 md:grid-cols-3">
-                <StatCard label="Access" value="Admin" hint={profile?.displayName ?? "Admin"} />
-                <StatCard label="API" value="Ready" hint="Endpoints mapped" />
-                <StatCard label="Users" value="Ready" hint="Server search + pagination" />
+                <StatCard label="Access" value={isAdmin ? "Admin" : "Moderator"} hint={profile?.displayName ?? "Panel access"} />
               </div>
 
               <div className="grid gap-4 lg:grid-cols-3">
                 {[
-                  { title: "Users", description: "Search, inspect, edit, roles, delete.", section: "users" as AdminSection },
-                  { title: "Roles", description: "Create roles and set permissions.", section: "roles" as AdminSection },
-                  { title: "Permissions", description: "Read backend permission catalog.", section: "permissions" as AdminSection },
-                  { title: "Audit logs", description: "Review account and admin audit events.", section: "audits" as AdminSection },
-                ].map((item) => (
+                  { title: "Users", description: "Search, inspect, edit, roles, delete.", section: "users" as AdminSection, visible: canReadUsers },
+                  { title: "Roles", description: "Create roles and set permissions.", section: "roles" as AdminSection, visible: canReadRoles },
+                  { title: "Permissions", description: "Read backend permission catalog.", section: "permissions" as AdminSection, visible: canReadPermissions },
+                  { title: "Audit logs", description: "Review account and admin audit events.", section: "audits" as AdminSection, visible: canReadAudits },
+                ].filter((item) => item.visible).map((item) => (
                   <Card key={item.title} className="border-border bg-card text-card-foreground">
                     <CardHeader>
                       <CardTitle>{item.title}</CardTitle>
@@ -736,6 +1044,7 @@ export default function Admin() {
                 <CardContent>
                   <FilterBar>
                     <SearchInput value={search} onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)} onClear={() => setSearch("")} placeholder="FZF search users" className="min-w-72" />
+                    <UserFilterSettings roles={roles} value={userFilters} onApply={applyUserFilters} onReset={resetUserFilters} />
                     <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}>
                       <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -754,7 +1063,7 @@ export default function Admin() {
                   ) : usersError ? (
                     <EmptyState title="Could not load users" description={usersError} action={<Button type="button" onClick={refetchUsers}>Try again</Button>} />
                   ) : (
-                    <DataTable columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No users found" emptyDescription="Try another search." />
+                    <DataTable columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No users found" emptyDescription="Try another search or filter." />
                   )}
                 </CardContent>
               </Card>
@@ -780,7 +1089,7 @@ export default function Admin() {
                     </div>
                     <div className="flex gap-2">
                       <Button type="button" variant="secondary" onClick={refetchRoles}>Refresh</Button>
-                      <Button type="button" onClick={openCreateRole}>Create role</Button>
+                      {canCreateRoles ? <Button type="button" onClick={openCreateRole}>Create role</Button> : null}
                     </div>
                   </div>
                 </CardHeader>
@@ -801,20 +1110,24 @@ export default function Admin() {
                             <CardDescription className="mt-1 font-mono text-xs">{role.name}</CardDescription>
                           </div>
                           <ActionMenu items={[
-                            { label: "Edit role", onSelect: () => openEditRole(role) },
-                            ...(!role.isSystem ? [{ label: "Delete role", onSelect: () => setDeleteRoleTarget(role), destructive: true }] : []),
-                          ]} />
+                            canUpdateRoles && (!role.isSystem || canUpdateSystemRoles) ? { label: "Edit role", onSelect: () => openEditRole(role) } : null,
+                            canDeleteRoles && (!role.isSystem || canDeleteSystemRoles) ? { label: "Delete role", onSelect: () => setDeleteRoleTarget(role), destructive: true } : null,
+                          ].filter((item): item is ActionMenuItem => item !== null)} />
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex flex-wrap gap-2">
                           {role.isSystem ? <Badge variant="outline">system</Badge> : <Badge variant="secondary">custom</Badge>}
-                          <Badge variant="textured">{role.permissions.length} permissions</Badge>
+                          {canReadRolePermissions ? <Badge variant="textured">{role.permissions.length} permissions</Badge> : null}
                         </div>
                         <p className="text-sm text-muted-foreground">{role.description || "No description."}</p>
-                        <div className="flex flex-wrap gap-1">
-                          {role.permissions.length ? role.permissions.map((permission) => <Badge key={permission} variant="outline">{permission}</Badge>) : <span className="text-sm text-muted-foreground">No permissions.</span>}
-                        </div>
+                        {canReadRolePermissions ? (
+                          <div className="flex flex-wrap gap-1">
+                            {role.permissions.length ? role.permissions.map((permission) => <Badge key={permission} variant="outline">{permission}</Badge>) : <span className="text-sm text-muted-foreground">No permissions.</span>}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Permission details hidden.</p>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -879,6 +1192,16 @@ export default function Admin() {
                 <CardContent>
                   <FilterBar>
                     <SearchInput value={auditEventType} onChange={(event: ChangeEvent<HTMLInputElement>) => setAuditEventType(event.target.value)} onClear={() => setAuditEventType("")} placeholder="Filter event type" className="min-w-72" />
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="audit-view-mode" className="text-sm text-muted-foreground">View</Label>
+                      <Select value={auditViewMode} onValueChange={(value) => setAuditViewMode(value === "technical" ? "technical" : "readable")}>
+                        <SelectTrigger id="audit-view-mode" className="w-36"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="readable">Readable</SelectItem>
+                          <SelectItem value="technical">Technical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Select value={String(auditsPageSize)} onValueChange={(value) => { setAuditsPageSize(Number(value)); setAuditsPage(1); }}>
                       <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -925,7 +1248,7 @@ export default function Admin() {
               <Card><CardContent className="space-y-2 p-4"><div><b>Photon:</b> {detail.photonUserId}</div><div><b>Sessions:</b> {detail.activeSessionCount}</div><div><b>Created:</b> {formatDate(detail.createdAt)}</div><div><b>Updated:</b> {formatDate(detail.updatedAt)}</div></CardContent></Card>
               <Card><CardContent className="space-y-2 p-4"><div><b>Password:</b> {detail.hasPassword ? "Yes" : "No"}</div><div><b>IP:</b> {detail.creationIpAddress ?? "—"}</div><div><b>Patreon:</b> {detail.patreon?.linked ? "Linked" : "Unlinked"}</div></CardContent></Card>
               <Card className="md:col-span-2"><CardHeader><CardTitle>OAuth links</CardTitle></CardHeader><CardContent>{oauthLinks.length ? oauthLinks.map((link) => <div key={`${link.provider}-${link.providerUserId}`}>{link.provider}: {link.providerEmail ?? link.providerUserId}</div>) : "None"}</CardContent></Card>
-              <Card className="md:col-span-2"><CardHeader><CardTitle>Recent audit</CardTitle></CardHeader><CardContent>{detail.recentAuditEvents.length ? detail.recentAuditEvents.map((event) => <div key={event.id}>{formatDate(event.createdAt)} — {event.eventType}</div>) : "None"}</CardContent></Card>
+              <Card className="md:col-span-2"><CardHeader><CardTitle>Recent audit</CardTitle></CardHeader><CardContent className="space-y-2">{detail.recentAuditEvents.length ? detail.recentAuditEvents.map((event) => <div key={event.id} className="flex flex-wrap items-center gap-2"><span className="tabular-nums text-muted-foreground">{formatAuditTimestamp(event.createdAt)}</span>{renderAuditActivity(event, roles, auditAccountLookup)}</div>) : "None"}</CardContent></Card>
             </div>
           ) : null}
         </DialogContent>
@@ -951,7 +1274,19 @@ export default function Admin() {
             <DialogTitle>Manage roles</DialogTitle>
             <DialogDescription>{assignUser?.email}</DialogDescription>
           </DialogHeader>
-          {roles.length ? <RoleMultiSelect roles={roles} value={roleDraft} onChange={setRoleDraft} /> : <EmptyState title="No roles available" description="Role catalog failed." />}
+          {roles.length ? (
+            <RoleMultiSelect
+              roles={roles}
+              value={roleDraft}
+              onChange={(nextRoles) => {
+                if (!assignUser) return;
+                setRoleDraft([
+                  ...assignUser.roles.filter((role) => !canRemoveUserRoles || nextRoles.includes(role)),
+                  ...nextRoles.filter((role) => !assignUser.roles.includes(role) && canAssignUserRoles),
+                ].filter((role, index, list) => list.indexOf(role) === index));
+              }}
+            />
+          ) : <EmptyState title="No roles available" description="Role catalog failed." />}
           <DialogFooter><Button type="button" variant="secondary" onClick={() => setAssignUser(null)}>Cancel</Button><Button type="button" disabled={actionLoading} onClick={() => void saveRoles()}>Save roles</Button></DialogFooter>
         </DialogContent>
       </Dialog>
@@ -975,10 +1310,19 @@ export default function Admin() {
               <Label htmlFor="roleDescription">Description</Label>
               <Textarea id="roleDescription" value={roleDescription} placeholder="What this role can do." onChange={(event) => setRoleDescription(event.target.value)} />
             </div>
-            <div className="space-y-2">
-              <Label>Permissions</Label>
-              {permissions.length ? <PermissionMultiSelect permissions={permissions} value={rolePermissions} onChange={setRolePermissions} /> : <EmptyState title="No permissions available" description="Permission catalog failed." />}
-            </div>
+            {canUpdateRolePermissions ? (
+              <div className="space-y-2">
+                <Label>Permissions</Label>
+                {permissions.length ? <PermissionMultiSelect permissions={permissions} value={rolePermissions} onChange={setRolePermissions} /> : <EmptyState title="No permissions available" description="Permission catalog failed." />}
+              </div>
+            ) : canReadRolePermissions ? (
+              <div className="space-y-2">
+                <Label>Permissions</Label>
+                <div className="flex flex-wrap gap-1">
+                  {rolePermissions.length ? rolePermissions.map((permission) => <Badge key={permission} variant="outline">{permission}</Badge>) : <span className="text-sm text-muted-foreground">No permissions.</span>}
+                </div>
+              </div>
+            ) : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setRoleFormMode(null)}>Cancel</Button>

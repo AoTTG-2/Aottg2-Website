@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, type RefObject } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -30,6 +30,69 @@ const ResetPassword = lazy(() => import("./page/ResetPassword"));
 const OAuthCallback = lazy(() => import("./page/OAuthCallback"));
 const Accounts = lazy(() => import("./page/Accounts"));
 const Admin = lazy(() => import("./page/Admin"));
+
+type SectionRefs = Record<string, RefObject<HTMLDivElement>>;
+
+const AUTH_ROUTE_PREFIXES = [
+  "/login",
+  "/register",
+  "/verify",
+  "/resend-verification",
+  "/forgot-password",
+  "/reset-password",
+  "/oauth-callback",
+  "/accounts",
+  "/account",
+];
+
+function isAuthRoute(pathname: string) {
+  return AUTH_ROUTE_PREFIXES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+function RouteSpinner({ themed = false }: { themed?: boolean }) {
+  return (
+    <div role="status" aria-live="polite" className="flex flex-col items-center gap-4">
+      <span
+        className={`h-10 w-10 animate-spin rounded-full border-2 ${
+          themed ? "border-muted border-t-primary" : "border-white/20 border-t-primary"
+        }`}
+        aria-hidden="true"
+      />
+      <span className={`font-primary text-xs uppercase tracking-[0.35em] ${themed ? "text-muted-foreground" : "text-white/70"}`}>
+        Loading
+      </span>
+    </div>
+  );
+}
+
+function RouteLoadingFallback({ refs }: { refs: SectionRefs }) {
+  const { pathname } = useLocation();
+  const isAdminRoute = pathname.startsWith("/admin");
+
+  if (isAdminRoute || isAuthRoute(pathname)) {
+    return (
+      <AccountsTheme plain={isAdminRoute}>
+        <AuthNavbar />
+        <div className={NAVBAR_OFFSET_CLASS}>
+          <main className="relative z-10 flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 text-foreground">
+            <RouteSpinner themed />
+          </main>
+        </div>
+      </AccountsTheme>
+    );
+  }
+
+  return (
+    <>
+      <Navbar refs={refs} />
+      <div className={NAVBAR_OFFSET_CLASS}>
+        <main className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-neutral-950 px-4 text-white">
+          <RouteSpinner />
+        </main>
+      </div>
+    </>
+  );
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -105,11 +168,11 @@ function App() {
   );
 
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true }}>
       <AuthProvider>
         <ScrollToTop />
         <StructuredData />
-        <Suspense fallback={null}>
+        <Suspense fallback={<RouteLoadingFallback refs={refs} />}>
           <Routes>
             <Route element={<LandingLayout />}>
               <Route path="/" element={<MainContent />} />

@@ -15,11 +15,20 @@ export interface ProfileResponse {
   photonUserId?: string;
   emailVerified: boolean;
   roles: string[];
+  permissions?: string[];
   patreon: PatreonStatus;
   description?: string | null;
   avatarKey?: string | null;
   socials?: Record<string, string>;
   createdAt?: string;
+}
+
+export type AdminEmailVerifiedFilter = "any" | "verified" | "unverified";
+
+export interface AdminAccountFilters {
+  roles: string[];
+  emailVerified: AdminEmailVerifiedFilter;
+  displayName: string;
 }
 
 export interface AdminAccountListResponse {
@@ -65,11 +74,19 @@ export interface OAuthLinkResponse {
   linkedAt: string;
 }
 
+export interface AuditAccountSummaryResponse {
+  accountId: string;
+  displayName?: string | null;
+  email?: string | null;
+}
+
 export interface AuditEventResponse {
   id: string;
   eventType: string;
   actorAccountId?: string | null;
   targetAccountId?: string | null;
+  actor?: AuditAccountSummaryResponse | null;
+  target?: AuditAccountSummaryResponse | null;
   metadataJson?: string | null;
   createdAt: string;
 }

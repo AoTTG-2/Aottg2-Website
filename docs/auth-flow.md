@@ -26,7 +26,7 @@ The website never stores provider secrets. All secrets stay in the accounts serv
 | `/reset-password?token=...` | Password reset link target. | `POST /v1/auth/reset-password` |
 | `/oauth-callback?code=...` | Browser OAuth completion. | `GET /v1/auth/oauth/session?code=...` |
 | `/accounts` | Account/profile management. | `GET/PATCH/DELETE /v1/me`, `GET /v1/patreon/oauth/start`, `DELETE /v1/patreon/link`, `POST /v1/auth/logout` |
-| `/admin` | Admin-only shell. Requires logged-in profile with `admin` role. | none yet |
+| `/admin` | Permission-gated admin/moderator panel. Requires an admin-module permission such as `users.read`, `roles.read`, `permissions.read`, or `audits.read`. | `GET/PATCH/DELETE /v1/admin/*` according to granted permissions |
 | `/account` | Compatibility redirect. | Redirects to `/accounts` |
 
 ## Frontend Environment

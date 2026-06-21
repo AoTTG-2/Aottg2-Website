@@ -17,14 +17,13 @@ To get started with contributing to the website, follow these steps:
 3. **Configure local auth API:**
    ```bash
    cp .env.example .env.local
-   # recommended: VITE_AUTH_API_BASE_URL=/accounts-api
    # optional: SHOW_LOGIN_NAV=false hides LOGIN/ACCOUNT from navbar only
-   # this uses the Vite/Vercel proxy to https://aottg2.com and avoids browser CORS issues
+   # npm run dev:local pins API calls to /accounts-api -> http://localhost:5010
    ```
 4. **Run the development server:**
    ```bash
    # Frontend + local auth service at http://localhost:5010/v1
-   # Uses .env.local-auth
+   # Uses .env.local-auth, then pins npm env so stale shell vars cannot hit prod.
    # Also runs ../AoTTG-2-auth-service/scripts/deploy-local.sh first.
    npm run dev:local
 
