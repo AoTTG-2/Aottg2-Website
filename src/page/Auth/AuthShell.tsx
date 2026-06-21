@@ -36,7 +36,7 @@ export function AuthShell({
         >
           {title && (
             <div className="bg-primary px-6 py-3">
-              <CardTitle className="text-2xl text-white md:text-3xl">
+              <CardTitle className="text-white">
                 {title}
               </CardTitle>
             </div>

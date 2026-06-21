@@ -38,7 +38,7 @@ function AccountCard({ id, title, description, children }: AccountCardProps) {
   return (
     <Card id={id} className="grid scroll-mt-24 overflow-hidden border-border bg-card/90 text-card-foreground md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
       <div className="border-b border-border bg-background/35 p-6 md:border-b-0 md:border-r md:p-8">
-        <CardTitle className="text-3xl">{title}</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <p className="mt-3 max-w-md text-sm leading-6 text-muted-foreground">{description}</p>
       </div>
       <CardContent className="space-y-4 p-6 md:p-8">{children}</CardContent>

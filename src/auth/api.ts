@@ -1,12 +1,20 @@
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "./storage";
 import type {
+  AccountRolesResponse,
+  AdminAccountDetailResponse,
+  AdminAccountListResponse,
   ApiResult,
+  AuditEventListResponse,
   AuthResponse,
+  CreateRoleRequest,
   ErrorResponse,
   OAuthProvider,
   OAuthStartResponse,
+  PermissionResponse,
   ProfileResponse,
   RegisterResponse,
+  RoleResponse,
+  UpdateRoleRequest,
 } from "./types";
 
 const API_BASE_URL = `${(import.meta.env.VITE_AUTH_API_BASE_URL ?? "").replace(/\/$/, "")}/v1`;
@@ -136,4 +144,67 @@ export const authApi = {
 
   patreonUnlink: () =>
     request<ErrorResponse>("/patreon/link", { method: "DELETE" }),
+
+  listAdminAccounts: (search: string, page: number, pageSize: number, signal?: AbortSignal) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (search.trim()) params.set("search", search.trim());
+    return request<AdminAccountListResponse & ErrorResponse>(`/admin/accounts?${params}`, { signal });
+  },
+
+  getAdminAccount: (id: string) =>
+    request<AdminAccountDetailResponse & ErrorResponse>(`/admin/accounts/${id}`),
+
+  listAuditEvents: (eventType: string, page: number, pageSize: number, signal?: AbortSignal) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (eventType.trim()) params.set("eventType", eventType.trim());
+    return request<AuditEventListResponse & ErrorResponse>(`/admin/audit-events?${params}`, { signal });
+  },
+
+  listPermissions: () =>
+    request<PermissionResponse[] & ErrorResponse>("/admin/permissions"),
+
+  listRoles: () =>
+    request<RoleResponse[] & ErrorResponse>("/admin/roles"),
+
+  createRole: (body: CreateRoleRequest) =>
+    request<RoleResponse & ErrorResponse>("/admin/roles", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  updateRole: (roleName: string, body: UpdateRoleRequest) =>
+    request<RoleResponse & ErrorResponse>(`/admin/roles/${encodeURIComponent(roleName)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  setRolePermissions: (roleName: string, permissions: string[]) =>
+    request<RoleResponse & ErrorResponse>(`/admin/roles/${encodeURIComponent(roleName)}/permissions`, {
+      method: "PATCH",
+      body: JSON.stringify({ permissions }),
+    }),
+
+  deleteRole: (roleName: string) =>
+    request<{ deleted?: boolean } & ErrorResponse>(`/admin/roles/${encodeURIComponent(roleName)}`, { method: "DELETE" }),
+
+  updateAdminAccount: (id: string, body: { displayName?: string; emailVerified?: boolean }) =>
+    request<ProfileResponse & ErrorResponse>(`/admin/accounts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  assignRole: (id: string, roleName: string) =>
+    request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/roles/${encodeURIComponent(roleName)}`, { method: "PUT" }),
+
+  removeRole: (id: string, roleName: string) =>
+    request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/roles/${encodeURIComponent(roleName)}`, { method: "DELETE" }),
+
+  grantTrusted: (id: string) =>
+    request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/trusted`, { method: "PUT" }),
+
+  revokeTrusted: (id: string) =>
+    request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/trusted`, { method: "DELETE" }),
+
+  deleteAdminAccount: (id: string) =>
+    request<{ deleted?: string } & ErrorResponse>(`/admin/accounts/${id}`, { method: "DELETE" }),
 };

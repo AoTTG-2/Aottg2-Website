@@ -1,16 +1,7 @@
-import React, { useEffect, useRef, useState, type ReactNode } from "react";
+import React, { useEffect, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  Aottg2LogoLight,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  cn,
-} from "@aottg2/ui";
+import { Aottg2LogoLight, cn } from "@aottg2/ui";
 import NavbarTexture from "../../assets/images/bg-light.webp";
 import Logo from "../../assets/images/navbar-image.webp";
 import { useAuth } from "../../auth/useAuth";
@@ -35,6 +26,19 @@ function Icon({ children }: { children: ReactNode }) {
   return <span className="mr-2 inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">{children}</span>;
 }
 
+function AccountMenuItem({ children, onClick }: { children: ReactNode; onClick: () => void | Promise<void> }) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="relative flex w-full cursor-pointer select-none items-center rounded-none px-2 py-1.5 text-left text-sm outline-none transition-[background-color,color,opacity] duration-150 ease-out hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+    >
+      {children}
+    </button>
+  );
+}
+
 function UserIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg>;
 }
@@ -53,8 +57,6 @@ function SunMoonIcon({ theme }: { theme: "light" | "dark" }) {
 
 const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const closeTimer = useRef<number>();
   const [theme, setTheme] = useState<"light" | "dark">(getInitialTheme);
   const isMobile = useBreakpoint(768);
   const { isAuthenticated, profile, logout } = useAuth();
@@ -62,6 +64,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const nextTheme = theme === "dark" ? "light" : "dark";
+  const isAdmin = profile?.roles.includes("admin") ?? false;
   const accountLabel = isAuthenticated ? profile?.displayName ?? "ACCOUNTS" : "ACCOUNTS";
   const menuItems: MenuItem[] = [
     { name: "DEVBLOG", id: "devblog" },
@@ -75,29 +78,30 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
     saveTheme(theme);
   }, [theme]);
 
+  function closeFocusedMenu() {
+    (document.activeElement as HTMLElement | null)?.blur();
+  }
+
   function toggleTheme() {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
-    setAccountOpen(false);
+    closeFocusedMenu();
     setIsMenuOpen(false);
   }
 
-  function openAccountMenu() {
-    window.clearTimeout(closeTimer.current);
-    setAccountOpen(true);
-  }
-
-  function closeAccountMenuSoon() {
-    closeTimer.current = window.setTimeout(() => setAccountOpen(false), 250);
-  }
-
   function goSettings() {
-    setAccountOpen(false);
+    closeFocusedMenu();
     navigate(isAuthenticated ? "/accounts" : "/login");
     window.scrollTo(0, 0);
   }
 
+  function goAdmin() {
+    closeFocusedMenu();
+    navigate("/admin");
+    window.scrollTo(0, 0);
+  }
+
   async function handleLogout() {
-    setAccountOpen(false);
+    closeFocusedMenu();
     await logout();
     navigate("/login");
   }
@@ -116,7 +120,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   };
 
   return (
-    <motion.div className="fixed top-0 z-[100] w-full">
+    <motion.div className="fixed top-0 z-[1000] w-full">
       <div
         className={`w-full ${NAVBAR_HEIGHT_CLASS} px-4 md:px-8 z-50 flex justify-between items-center relative overflow-hidden shadow-lg ${theme === "dark" ? "bg-neutral-950 text-white" : "text-black"}`}
         style={{
@@ -152,23 +156,22 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
               </button>
             ))}
             {SHOW_LOGIN_NAV && (
-              <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
-                <div onPointerEnter={openAccountMenu}>
-                  <DropdownMenuTrigger asChild>
-                    <button type="button" className="inline-flex max-w-[12rem] cursor-pointer items-center gap-2 transition-colors duration-300 hover:text-[#852837]">
-                      <span className="h-4 w-4 shrink-0" aria-hidden="true"><UserIcon /></span>
-                      <span className="truncate">{accountLabel}</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className={cn("aottg2-theme aottg2-palette-website z-[120] w-56", theme)} onPointerEnter={openAccountMenu} onPointerLeave={closeAccountMenuSoon} onCloseAutoFocus={(event) => event.preventDefault()}>
-                    <DropdownMenuItem onSelect={goSettings}><Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>{isAuthenticated ? "Settings" : "Login"}</DropdownMenuItem>
-                    {isAuthenticated && <DropdownMenuItem onSelect={handleLogout}><Icon><LogoutIcon /></Icon>Logout</DropdownMenuItem>}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Appearance</DropdownMenuLabel>
-                    <DropdownMenuItem onSelect={toggleTheme}><Icon><SunMoonIcon theme={nextTheme} /></Icon>Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode</DropdownMenuItem>
-                  </DropdownMenuContent>
+              <div className="group relative z-[1001] flex h-full items-center">
+                <button type="button" aria-haspopup="menu" className="inline-flex max-w-[12rem] cursor-pointer items-center gap-2 transition-colors duration-300 hover:text-[#852837] focus:text-[#852837] focus:outline-none">
+                  <span className="h-4 w-4 shrink-0" aria-hidden="true"><UserIcon /></span>
+                  <span className="truncate">{accountLabel}</span>
+                </button>
+                <div className="invisible fixed right-8 top-10 z-[1002] w-56 opacity-0 transition-[opacity,transform,visibility] duration-150 ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                  <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content overflow-hidden rounded-none border border-border bg-popover p-1 text-popover-foreground shadow-md", theme)}>
+                    <AccountMenuItem onClick={goSettings}><Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>{isAuthenticated ? "Settings" : "Login"}</AccountMenuItem>
+                    {isAdmin && <AccountMenuItem onClick={goAdmin}><Icon><SettingsIcon /></Icon>Admin Panel</AccountMenuItem>}
+                    {isAuthenticated && <AccountMenuItem onClick={handleLogout}><Icon><LogoutIcon /></Icon>Logout</AccountMenuItem>}
+                    <div className="-mx-1 my-1 h-px bg-muted" role="separator" />
+                    <div className="aottg2-texture aottg2-texture-primary -mx-1 -mt-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wide text-primary-foreground">Appearance</div>
+                    <AccountMenuItem onClick={toggleTheme}><Icon><SunMoonIcon theme={nextTheme} /></Icon>Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode</AccountMenuItem>
+                  </div>
                 </div>
-              </DropdownMenu>
+              </div>
             )}
           </div>
         )}
@@ -187,6 +190,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
             </button>
           ))}
           {SHOW_LOGIN_NAV && <button onClick={goSettings} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Settings</button>}
+          {isAdmin && <button onClick={goAdmin} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Admin Panel</button>}
           {isAuthenticated && <button onClick={handleLogout} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">↪ Logout</button>}
           <button onClick={toggleTheme} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode</button>
         </motion.div>

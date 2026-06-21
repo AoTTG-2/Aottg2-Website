@@ -15,7 +15,7 @@
     "test:e2e:auth": "playwright test tests/playwright-auth-smoke.spec.ts --browser=chromium"
   },
   "dependencies": {
-    "@aottg2/ui": "github:AoTTG-2/AoTTG2-component-library#1a15bf6e9c693f998a4b134d10cefbc91e38895a",
+    "@aottg2/ui": "github:AoTTG-2/AoTTG2-component-library#61e5b7c54a375879c678ebd808c351e8efef9900",
     "framer-motion": "^10.16.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

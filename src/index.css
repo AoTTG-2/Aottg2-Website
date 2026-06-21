@@ -24,3 +24,38 @@
     url("/fonts/tertiary.otf") format("opentype");
   font-display: swap;
 }
+
+@layer base {
+  html {
+    background: hsl(var(--background));
+    scrollbar-color: hsl(var(--primary)) hsl(var(--background));
+    scrollbar-width: thin;
+  }
+
+  body,
+  #root {
+    background: hsl(var(--background));
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary));
+    border: 3px solid hsl(var(--background));
+    border-radius: 999px;
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--ring));
+  }
+}

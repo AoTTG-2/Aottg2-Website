@@ -16,9 +16,10 @@ const wallpapers = [
 
 interface AccountsThemeProps {
   children: ReactNode;
+  plain?: boolean;
 }
 
-export function AccountsTheme({ children }: AccountsThemeProps) {
+export function AccountsTheme({ children, plain = false }: AccountsThemeProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [theme, setTheme] = useState<Aottg2ThemeMode>(getInitialTheme);
 
@@ -27,6 +28,8 @@ export function AccountsTheme({ children }: AccountsThemeProps) {
   }, [theme]);
 
   useEffect(() => {
+    if (plain) return undefined;
+
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion || wallpapers.length < 2) {
       return undefined;
@@ -37,13 +40,15 @@ export function AccountsTheme({ children }: AccountsThemeProps) {
     }, 9000);
 
     return () => window.clearInterval(interval);
-  }, []);
+  }, [plain]);
 
   useEffect(() => {
+    if (plain) return;
+
     const next = new Image();
     next.decoding = "async";
     next.src = wallpapers[(activeIndex + 1) % wallpapers.length];
-  }, [activeIndex]);
+  }, [activeIndex, plain]);
 
   const value = useMemo(
     () => ({
@@ -55,24 +60,28 @@ export function AccountsTheme({ children }: AccountsThemeProps) {
 
   return (
     <AccountsThemeContext.Provider value={value}>
-      <Aottg2Theme theme={theme} palette="website" className="accounts-theme relative min-h-screen overflow-hidden bg-background text-foreground">
-        <div className="fixed inset-0 overflow-hidden">
-          {wallpapers.map((wallpaper, index) => (
-            <img
-              key={wallpaper}
-              src={wallpaper}
-              alt=""
-              aria-hidden="true"
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1800ms] ease-in-out ${
-                index === activeIndex ? "opacity-45" : "opacity-0"
-              }`}
-              loading={index === 0 ? "eager" : "lazy"}
-              decoding="async"
-            />
-          ))}
-        </div>
-        <div className="pointer-events-none fixed inset-0 bg-black/65" />
-        <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.32)_55%,rgba(0,0,0,0.78)_100%)]" />
+      <Aottg2Theme theme={theme} palette="website" global className="accounts-theme relative min-h-screen overflow-hidden bg-background text-foreground">
+        {!plain && (
+          <>
+            <div className="fixed inset-0 overflow-hidden">
+              {wallpapers.map((wallpaper, index) => (
+                <img
+                  key={wallpaper}
+                  src={wallpaper}
+                  alt=""
+                  aria-hidden="true"
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1800ms] ease-in-out ${
+                    index === activeIndex ? "opacity-45" : "opacity-0"
+                  }`}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                />
+              ))}
+            </div>
+            <div className="pointer-events-none fixed inset-0 bg-black/65" />
+            <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.32)_55%,rgba(0,0,0,0.78)_100%)]" />
+          </>
+        )}
         {children}
         <Toaster className={`aottg2-theme aottg2-palette-website ${theme}`} />
       </Aottg2Theme>

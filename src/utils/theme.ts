@@ -13,4 +13,7 @@ export function getInitialTheme(): Aottg2ThemeMode {
 
 export function saveTheme(theme: Aottg2ThemeMode) {
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.classList.toggle("dark", theme === "dark");
+  document.documentElement.classList.toggle("light", theme === "light");
 }

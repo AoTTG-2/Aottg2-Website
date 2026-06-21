@@ -29,6 +29,7 @@ const ForgotPassword = lazy(() => import("./page/ForgotPassword"));
 const ResetPassword = lazy(() => import("./page/ResetPassword"));
 const OAuthCallback = lazy(() => import("./page/OAuthCallback"));
 const Accounts = lazy(() => import("./page/Accounts"));
+const Admin = lazy(() => import("./page/Admin"));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -94,6 +95,15 @@ function App() {
     </AccountsTheme>
   );
 
+  const AdminLayout = () => (
+    <AccountsTheme plain>
+      <AuthNavbar />
+      <div className={NAVBAR_OFFSET_CLASS}>
+        <Outlet />
+      </div>
+    </AccountsTheme>
+  );
+
   return (
     <Router>
       <AuthProvider>
@@ -117,6 +127,9 @@ function App() {
               <Route path="/oauth-callback" element={<OAuthCallback />} />
               <Route path="/accounts" element={<Accounts />} />
               <Route path="/account" element={<Navigate to="/accounts" replace />} />
+            </Route>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<Admin />} />
             </Route>
           </Routes>
         </Suspense>

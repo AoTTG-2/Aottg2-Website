@@ -1,19 +1,24 @@
-import { useRef, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  cn,
-} from "@aottg2/ui";
+import { cn } from "@aottg2/ui";
 import { useAuth } from "../../auth/useAuth";
 import { useAccountsTheme } from "./accounts-theme-context";
 
 function Icon({ children }: { children: ReactNode }) {
   return <span className="mr-2 inline-flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden="true">{children}</span>;
+}
+
+function MenuItem({ children, onClick }: { children: ReactNode; onClick: () => void | Promise<void> }) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className="relative flex w-full cursor-pointer select-none items-center rounded-none px-2 py-1.5 text-left text-sm outline-none transition-[background-color,color,opacity] duration-150 ease-out hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+    >
+      {children}
+    </button>
+  );
 }
 
 function UserIcon() {
@@ -37,55 +42,49 @@ function SunMoonIcon({ theme }: { theme: "light" | "dark" }) {
 }
 
 export function AuthNavbar() {
-  const [open, setOpen] = useState(false);
-  const closeTimer = useRef<number>();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, profile, logout } = useAuth();
   const { theme, toggleTheme } = useAccountsTheme();
   const nextTheme = theme === "dark" ? "light" : "dark";
-  const accountsActive = location.pathname === "/accounts" || location.pathname === "/login";
+  const isAdmin = profile?.roles.includes("admin") ?? false;
+  const accountsActive = location.pathname === "/accounts" || location.pathname === "/login" || location.pathname === "/admin";
   const accountLabel = isAuthenticated && profile?.displayName ? profile.displayName : "ACCOUNTS";
-  const logoText = location.pathname.startsWith("/account") ? "SETTINGS" : "LOGIN";
+  const logoText = location.pathname.startsWith("/admin") ? "ADMIN" : location.pathname.startsWith("/account") ? "SETTINGS" : "LOGIN";
 
   function goHome() {
     navigate("/");
     window.scrollTo(0, 0);
   }
 
-  function openMenu() {
-    window.clearTimeout(closeTimer.current);
-    setOpen(true);
-  }
-
-  function closeMenu() {
-    window.clearTimeout(closeTimer.current);
-    setOpen(false);
-  }
-
-  function closeMenuSoon() {
-    closeTimer.current = window.setTimeout(() => setOpen(false), 250);
+  function closeFocusedMenu() {
+    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   function goSettings() {
-    closeMenu();
+    closeFocusedMenu();
     navigate(isAuthenticated ? "/accounts" : "/login");
   }
 
+  function goAdmin() {
+    closeFocusedMenu();
+    navigate("/admin");
+  }
+
   async function handleLogout() {
-    closeMenu();
+    closeFocusedMenu();
     await logout();
     navigate("/login");
   }
 
   function switchTheme() {
     toggleTheme();
-    closeMenu();
+    closeFocusedMenu();
   }
 
   return (
-    <nav className="fixed top-0 z-50 w-full">
-      <div className="aottg2-texture flex h-14 w-full items-center justify-between px-4 shadow-lg lg:h-16 lg:px-8">
+    <nav className="fixed top-0 z-[1000] w-full overflow-visible">
+      <div className="aottg2-texture relative z-[1000] flex h-14 w-full items-center justify-between px-4 shadow-lg lg:h-16 lg:px-8">
         <button type="button" onClick={goHome} className="flex min-h-10 min-w-10 shrink-0 items-center transition-transform duration-150 ease-out active:scale-[0.96]" aria-label="AoTTG 2 home">
           <span className="aottg2-text-logo font-primary text-lg leading-none tracking-wide sm:text-xl lg:text-2xl">
             <span className="aottg2-text-logo-part text-foreground" data-text="AoTTG">AoTTG</span>
@@ -97,34 +96,42 @@ export function AuthNavbar() {
           <button type="button" onClick={goHome} className="transition-colors duration-150 ease-out hover:text-primary">
             HOME
           </button>
-          <DropdownMenu open={open} onOpenChange={setOpen}>
-            <div onPointerEnter={openMenu}>
-              <DropdownMenuTrigger asChild>
-                <button type="button" className={cn("inline-flex max-w-[12rem] cursor-pointer items-center gap-2 transition-colors duration-150 ease-out hover:text-primary", accountsActive && "text-primary")}>
-                  <span className="h-4 w-4 shrink-0" aria-hidden="true"><UserIcon /></span>
-                  <span className="truncate">{accountLabel}</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className={cn("aottg2-theme aottg2-palette-website w-56", theme)} onPointerEnter={openMenu} onPointerLeave={closeMenuSoon} onCloseAutoFocus={(event) => event.preventDefault()}>
-                <DropdownMenuItem onSelect={goSettings}>
+          <div className="group relative z-[1001] flex h-full items-center">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              className={cn("inline-flex max-w-[12rem] cursor-pointer items-center gap-2 transition-colors duration-150 ease-out hover:text-primary focus:text-primary focus:outline-none", accountsActive && "text-primary")}
+            >
+              <span className="h-4 w-4 shrink-0" aria-hidden="true"><UserIcon /></span>
+              <span className="truncate">{accountLabel}</span>
+            </button>
+            <div className="invisible fixed right-4 top-11 z-[1002] w-56 opacity-0 transition-[opacity,transform,visibility] duration-150 ease-out group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 lg:right-8">
+              <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content overflow-hidden rounded-none border border-border bg-popover p-1 text-popover-foreground shadow-md", theme)}>
+                <MenuItem onClick={goSettings}>
                   <Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>
                   {isAuthenticated ? "Settings" : "Login"}
-                </DropdownMenuItem>
+                </MenuItem>
+                {isAdmin && (
+                  <MenuItem onClick={goAdmin}>
+                    <Icon><SettingsIcon /></Icon>
+                    Admin Panel
+                  </MenuItem>
+                )}
                 {isAuthenticated && (
-                  <DropdownMenuItem onSelect={handleLogout}>
+                  <MenuItem onClick={handleLogout}>
                     <Icon><LogoutIcon /></Icon>
                     Logout
-                  </DropdownMenuItem>
+                  </MenuItem>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Appearance</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={switchTheme}>
+                <div className="-mx-1 my-1 h-px bg-muted" role="separator" />
+                <div className="aottg2-texture aottg2-texture-primary -mx-1 -mt-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wide text-primary-foreground">Appearance</div>
+                <MenuItem onClick={switchTheme}>
                   <Icon><SunMoonIcon theme={nextTheme} /></Icon>
                   Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+                </MenuItem>
+              </div>
             </div>
-          </DropdownMenu>
+          </div>
         </div>
       </div>
     </nav>
