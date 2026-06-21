@@ -86,13 +86,13 @@ export default function Login() {
       <div className="mt-6 flex flex-wrap justify-between gap-3 text-sm font-medium text-muted-foreground">
         <span>
           No account?{" "}
-          <Link className="text-foreground underline underline-offset-4" to="/register">
-            Register
-          </Link>
+          <Button asChild variant="link" className="h-auto p-0 text-foreground normal-case tracking-normal">
+            <Link to="/register">Register</Link>
+          </Button>
         </span>
-        <Link className="text-foreground underline underline-offset-4" to="/forgot-password">
-          Forgot password?
-        </Link>
+        <Button asChild variant="link" className="h-auto p-0 text-foreground normal-case tracking-normal">
+          <Link to="/forgot-password">Forgot password?</Link>
+        </Button>
       </div>
     </AuthShell>
   );
