@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/accounts-api/:path*",
-      "destination": "https://accounts.aottg2.com/:path*"
+      "destination": "https://aottg2.com/:path*"
     },
     {
       "source": "/((?!assets/|fonts/|.*\\.(?:webp|png|jpg|jpeg|svg|ico|txt|xml|json|br|gz)$).*)",

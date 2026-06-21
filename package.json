@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "deploy-local": "../AoTTG-2-auth-service/scripts/deploy-local.sh",
+    "predev:local": "npm run deploy-local",
+    "dev:local": "vite --mode local-auth",
+    "dev:prod": "vite --mode prod-auth",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",

@@ -16,7 +16,7 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        account: "border border-white/20 bg-white/10 text-white shadow-sm hover:bg-white/15",
+        account: "border border-neutral-950/20 bg-neutral-950/5 text-neutral-950 shadow-sm hover:bg-neutral-950/10",
         oauthDiscord: "bg-secondary text-white shadow-sm hover:bg-secondary/90",
         oauthGoogle: "bg-white text-black shadow-sm hover:bg-white/90",
         brush: "account-brush-button font-primary text-xl text-white shadow-none",
