@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import NavbarTexture from "../../assets/images/bg-light.webp";
 import Logo from "../../assets/images/navbar-image.webp";
 import { useAuth } from "../../auth/useAuth";
+import { NAVBAR_HEIGHT_CLASS, NAVBAR_LOGO_HEIGHT_CLASS } from "../../data/layout";
 import useBreakpoint from "../../utils/useBreakpoint";
 
 interface NavbarProps {
@@ -69,9 +70,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   return (
     <motion.div className="fixed top-0 z-[100] w-full">
       <div
-        className={`w-full ${
-          isMobile ? "h-14" : "h-16"
-        } px-4 md:px-8 z-50 flex justify-between items-center relative overflow-hidden shadow-lg`}
+        className={`w-full ${NAVBAR_HEIGHT_CLASS} px-4 md:px-8 z-50 flex justify-between items-center relative overflow-hidden shadow-lg`}
         style={{
           backgroundImage: `url(${NavbarTexture})`,
           backgroundRepeat: "repeat-x",
@@ -81,7 +80,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
       >
         <img
           src={Logo}
-          className={`${isMobile ? "h-7" : "h-10"} w-auto flex-shrink-0 object-contain cursor-pointer`}
+          className={`${NAVBAR_LOGO_HEIGHT_CLASS} w-auto flex-shrink-0 object-contain cursor-pointer`}
           alt="AoTTG 2 home"
           width="453"
           height="155"

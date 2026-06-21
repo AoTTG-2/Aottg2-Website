@@ -160,7 +160,7 @@ const Landing = () => {
   return (
     <section
       ref={containerRef}
-      className="h-[40vw] min-h-[320px] bg-black overflow-hidden relative mt-16 md:mt-0"
+      className="h-[40vw] min-h-[320px] bg-black overflow-hidden relative"
       aria-label="Attack on Titan Tribute Game 2 hero"
     >
       <h1 className="sr-only">Attack on Titan Tribute Game 2</h1>

@@ -16,6 +16,7 @@ import Servers from "./screens/Servers";
 import Team from "./screens/Team";
 import StructuredData from "./components/StructuredData";
 import { AuthProvider } from "./auth/AuthProvider";
+import { NAVBAR_OFFSET_CLASS, NAVBAR_SCROLL_MARGIN_CLASS } from "./data/layout";
 import { AccountsTheme } from "./page/Auth/AccountsTheme";
 
 const Credits = lazy(() => import("./page/Credits"));
@@ -55,19 +56,19 @@ function App() {
 
   const MainContent = () => (
     <>
-      <div ref={homeRef} className="scroll-mt-14 md:scroll-mt-16">
+      <div ref={homeRef} className={NAVBAR_SCROLL_MARGIN_CLASS}>
         <Landing />
       </div>
-      <div ref={devblogRef} className="scroll-mt-14 md:scroll-mt-16">
+      <div ref={devblogRef} className={NAVBAR_SCROLL_MARGIN_CLASS}>
         <DevBlog />
       </div>
-      <div ref={communityRef} className="scroll-mt-14 md:scroll-mt-16">
+      <div ref={communityRef} className={NAVBAR_SCROLL_MARGIN_CLASS}>
         <Community />
       </div>
-      <div ref={supportRef} className="scroll-mt-14 md:scroll-mt-16">
+      <div ref={supportRef} className={NAVBAR_SCROLL_MARGIN_CLASS}>
         <Servers />
       </div>
-      <div ref={creditsRef} className="scroll-mt-14 md:scroll-mt-16">
+      <div ref={creditsRef} className={NAVBAR_SCROLL_MARGIN_CLASS}>
         <Team />
       </div>
     </>
@@ -76,7 +77,7 @@ function App() {
   const LandingLayout = () => (
     <>
       <Navbar refs={refs} />
-      <div className="pt-14 md:pt-16">
+      <div className={NAVBAR_OFFSET_CLASS}>
         <Outlet />
       </div>
       <Footer />
@@ -86,7 +87,7 @@ function App() {
   const AccountsLayout = () => (
     <AccountsTheme>
       <Navbar refs={refs} />
-      <div className="pt-14 md:pt-16">
+      <div className={NAVBAR_OFFSET_CLASS}>
         <Outlet />
       </div>
     </AccountsTheme>

@@ -61,13 +61,30 @@ const Servers = () => {
     <BgContainer title="Support Our Servers" isDark isRightAligned>
       <motion.div
         ref={ref}
-        className="lg:absolute lg:top-0 lg:left-0 w-full h-full flex justify-center items-center lg:w-3/5"
+        className="grid w-full place-items-center lg:absolute lg:top-0 lg:left-0 lg:h-full lg:w-3/5"
         animate={shake ? shakeAnimation : {}}
+        role="img"
+        aria-label={showTitan2 ? "Titan after stomping" : "Titan before stomping"}
       >
         <img
-          src={showTitan2 ? Titan_2 : Titan_1}
-          className="object-cover lg:w-full lg:h-full"
-          alt={showTitan2 ? "Titan after stomping" : "Titan before stomping"}
+          src={Titan_1}
+          className={`col-start-1 row-start-1 max-w-full object-cover transition-opacity duration-200 lg:h-full lg:w-full ${
+            showTitan2 ? "opacity-0" : "opacity-100"
+          }`}
+          alt=""
+          aria-hidden="true"
+          width="424"
+          height="520"
+          loading="lazy"
+          decoding="async"
+        />
+        <img
+          src={Titan_2}
+          className={`col-start-1 row-start-1 max-w-full object-cover transition-opacity duration-200 lg:h-full lg:w-full ${
+            showTitan2 ? "opacity-100" : "opacity-0"
+          }`}
+          alt=""
+          aria-hidden="true"
           width="424"
           height="520"
           loading="lazy"
