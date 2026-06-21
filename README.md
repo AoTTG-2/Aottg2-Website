@@ -18,6 +18,7 @@ To get started with contributing to the website, follow these steps:
    ```bash
    cp .env.example .env.local
    # recommended: VITE_AUTH_API_BASE_URL=/accounts-api
+   # optional: SHOW_LOGIN_NAV=false hides LOGIN/ACCOUNT from navbar only
    # this uses the Vite/Vercel proxy to https://accounts.aottg2.com and avoids browser CORS issues
    ```
 4. **Run the development server:**

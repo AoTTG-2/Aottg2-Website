@@ -4,6 +4,7 @@ services:
       context: .
       args:
         VITE_AUTH_API_BASE_URL: ${VITE_AUTH_API_BASE_URL:-/accounts-api}
+        SHOW_LOGIN_NAV: ${SHOW_LOGIN_NAV:-true}
     image: aottg2-website:latest
     container_name: aottg2-website
     environment:

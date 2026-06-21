@@ -19,6 +19,8 @@ interface MenuItem {
   path?: string;
 }
 
+const SHOW_LOGIN_NAV = import.meta.env.SHOW_LOGIN_NAV?.toLowerCase() !== "false";
+
 const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isMobile = useBreakpoint(768);
@@ -33,7 +35,9 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
     { name: "SUPPORT", id: "support" },
     { name: "CREDITS", id: "credits" },
     { name: "PLAY", id: "home" },
-    { name: isAuthenticated ? "ACCOUNT" : "LOGIN", path: isAuthenticated ? "/accounts" : "/login" },
+    ...(SHOW_LOGIN_NAV
+      ? [{ name: isAuthenticated ? "ACCOUNT" : "LOGIN", path: isAuthenticated ? "/accounts" : "/login" }]
+      : []),
   ];
 
   const scrollToSection = (id: string) => {
