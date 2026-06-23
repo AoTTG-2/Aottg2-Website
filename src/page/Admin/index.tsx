@@ -551,7 +551,8 @@ export default function Admin() {
   const canReadAudits = can("audits.read");
   const canReadEmails = can("emails.read");
   const canUpdateEmails = isAdmin && can("emails.update");
-  const canManagePatreon = isAdmin;
+  const canReadPatreon = isAdmin && can("patreon.read");
+  const canUpdatePatreon = isAdmin && can("patreon.update");
   const [section, setSection] = useState<AdminSection>("overview");
   const [roles, setRoles] = useState<RoleResponse[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -634,7 +635,7 @@ export default function Admin() {
     { id: "permissions", label: "Permissions", icon: <FiKey />, visible: canReadPermissions },
     { id: "audits", label: "Audit logs", icon: <FiFileText />, visible: canReadAudits },
     { id: "emails", label: "Email Service", icon: <FiMail />, visible: canReadEmails },
-    { id: "patreon", label: "Patreon", icon: <FiHeart />, visible: canManagePatreon },
+    { id: "patreon", label: "Patreon", icon: <FiHeart />, visible: canReadPatreon },
   ];
   const visibleSectionItems = sectionItems.filter((item) => item.visible);
 
@@ -737,7 +738,7 @@ export default function Admin() {
   }, [canReadEmails, emailLimitsRefreshKey, section]);
 
   useEffect(() => {
-    if (!canManagePatreon || section !== "patreon") return;
+    if (!canReadPatreon || section !== "patreon") return;
 
     setPatreonTiersLoading(true);
     setPatreonTiersError("");
@@ -758,7 +759,7 @@ export default function Admin() {
         setPatreonTiersError(error instanceof Error ? error.message : "Could not load Patreon tiers.");
       })
       .finally(() => setPatreonTiersLoading(false));
-  }, [canManagePatreon, patreonRefreshKey, section]);
+  }, [canReadPatreon, patreonRefreshKey, section]);
 
   useEffect(() => {
     if (!canReadUsers || section !== "users") return;
@@ -1329,8 +1330,8 @@ export default function Admin() {
           canReadUsers ? { label: "View details", onSelect: () => void viewDetails(user) } : null,
           canUpdateUsers ? { label: "Edit profile", onSelect: () => openEdit(user) } : null,
           canManageUserRoles ? { label: "Manage roles", onSelect: () => openAssign(user) } : null,
-          canManagePatreon ? { label: "Manage Patreon", onSelect: () => openPatreon(user) } : null,
-          canManagePatreon && user.patreon?.linked ? { label: "Refresh Patreon", onSelect: () => void refreshUserPatreon(user) } : null,
+          canUpdatePatreon ? { label: "Manage Patreon", onSelect: () => openPatreon(user) } : null,
+          canUpdatePatreon && user.patreon?.linked ? { label: "Refresh Patreon", onSelect: () => void refreshUserPatreon(user) } : null,
           canDeleteUsers && user.accountId !== profile?.accountId ? { label: "Delete account", onSelect: () => setDeleteUser(user), destructive: true } : null,
         ].filter((item): item is ActionMenuItem => item !== null)} />
       ),
@@ -1445,7 +1446,7 @@ export default function Admin() {
                   { title: "Permissions", description: "Read backend permission catalog.", section: "permissions" as AdminSection, visible: canReadPermissions },
                   { title: "Audit logs", description: "Review account and admin audit events.", section: "audits" as AdminSection, visible: canReadAudits },
                   { title: "Email Service", description: "Monitor SES usage and quota settings.", section: "emails" as AdminSection, visible: canReadEmails },
-                  { title: "Patreon", description: "Review live tiers and fallback labels.", section: "patreon" as AdminSection, visible: canManagePatreon },
+                  { title: "Patreon", description: "Review live tiers and fallback labels.", section: "patreon" as AdminSection, visible: canReadPatreon },
                 ].filter((item) => item.visible).map((item) => (
                   <Card key={item.title} className="border-border bg-card text-card-foreground">
                     <CardHeader>
@@ -1781,7 +1782,7 @@ export default function Admin() {
                       className="min-h-72 font-mono text-xs"
                       spellCheck={false}
                     />
-                    <Button type="button" className="w-full" disabled={patreonTierLabelsSaving} onClick={() => void savePatreonTierLabels()}>
+                    <Button type="button" className="w-full" disabled={patreonTierLabelsSaving || !canUpdatePatreon} onClick={() => void savePatreonTierLabels()}>
                       {patreonTierLabelsSaving ? "Saving..." : "Save label JSON"}
                     </Button>
                   </CardContent>
@@ -1870,7 +1871,7 @@ export default function Admin() {
                   ) : null}
                   <div className="text-muted-foreground">Pledge: {formatMoneyCents(detail.patreon?.entitledAmountCents)}</div>
                   <div className="text-muted-foreground">Synced: {formatAuditTimestamp(detail.patreon?.lastSyncedAt ?? undefined)}</div>
-                  {canManagePatreon ? (
+                  {canUpdatePatreon ? (
                     <div className="flex flex-wrap gap-2 pt-1">
                       <Button type="button" variant="secondary" onClick={() => openPatreon(detail)}>Edit tiers</Button>
                       <Button type="button" variant="secondary" disabled={actionLoading || !detail.patreon?.linked} onClick={() => void refreshUserPatreon(detail)}>Refresh tiers</Button>
