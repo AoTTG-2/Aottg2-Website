@@ -33,7 +33,7 @@ function AccountMenuItem({ children, onClick }: { children: ReactNode; onClick: 
       type="button"
       role="menuitem"
       onClick={onClick}
-      className="relative flex w-full cursor-pointer select-none items-center rounded-none px-2 py-1.5 text-left text-sm outline-none transition-[background-color,color,opacity] duration-150 ease-out hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+      className="relative flex w-full cursor-pointer select-none items-center rounded-none px-2 py-1.5 text-left font-primary text-sm outline-none transition-[background-color,color,opacity] duration-150 ease-out hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
     >
       {children}
     </button>
@@ -158,18 +158,19 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
               </button>
             ))}
             {SHOW_LOGIN_NAV && (
-              <div className="group relative z-[1001] flex h-full items-center">
+              <div className="group relative z-[1101] flex h-full items-center">
                 <button type="button" aria-haspopup="menu" className="inline-flex max-w-[12rem] cursor-pointer items-center gap-2 transition-colors duration-300 hover:text-[#852837] focus:text-[#852837] focus:outline-none">
                   <span className="h-4 w-4 shrink-0" aria-hidden="true"><UserIcon /></span>
                   <span className="truncate">{accountLabel}</span>
                 </button>
-                <div className="invisible fixed right-8 top-10 z-[1002] w-56 opacity-0 transition-[opacity,transform,visibility] duration-150 ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-                  <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content overflow-hidden rounded-none border border-border bg-popover p-1 text-popover-foreground shadow-md", theme)}>
+                <div className="invisible fixed right-4 top-9 z-[1100] w-56 pt-1 opacity-0 transition-[opacity,visibility] duration-150 ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 lg:right-8">
+                  <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content min-w-32 overflow-hidden rounded-none bg-popover p-1 text-popover-foreground shadow-md", theme)}>
+                    <div className="aottg2-emboss-bg aottg2-cta-primary -mx-1 -mt-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wider text-primary-foreground">Account</div>
                     <AccountMenuItem onClick={goSettings}><Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>{isAuthenticated ? "Settings" : "Login"}</AccountMenuItem>
                     {canAccessAdmin && <AccountMenuItem onClick={goAdmin}><Icon><SettingsIcon /></Icon>Admin Panel</AccountMenuItem>}
                     {isAuthenticated && <AccountMenuItem onClick={handleLogout}><Icon><LogoutIcon /></Icon>Logout</AccountMenuItem>}
                     <div className="-mx-1 my-1 h-px bg-muted" role="separator" />
-                    <div className="aottg2-texture aottg2-texture-primary -mx-1 -mt-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wide text-primary-foreground">Appearance</div>
+                    <div className="aottg2-emboss-bg aottg2-cta-primary -mx-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wider text-primary-foreground">Appearance</div>
                     <AccountMenuItem onClick={toggleTheme}><Icon><SunMoonIcon theme={nextTheme} /></Icon>Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode</AccountMenuItem>
                   </div>
                 </div>
