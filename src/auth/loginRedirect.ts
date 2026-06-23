@@ -9,6 +9,8 @@ function workshopOrigins(): Set<string> {
     "https://workshop.aottg2.com",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
   ]);
   const configured = import.meta.env.VITE_WORKSHOP_URL;
   if (configured) origins.add(new URL(configured).origin);
