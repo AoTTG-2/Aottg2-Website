@@ -231,39 +231,43 @@ export default function Profile() {
               )}
             </div>
           </div>
-          <CardHeader className="gap-3 pt-24 md:min-h-44 md:pt-24">
-            <CardTitle>{profile.displayName}</CardTitle>
-            {bio.trim() ? (
-              <CardDescription className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed">
-                {bio.trim()}
-              </CardDescription>
-            ) : null}
-            {previewSocialLinks.length ? (
-              <div className="flex flex-wrap gap-2">
-                {previewSocialLinks.map((url, index) => {
-                  const href = safeSocialUrl(url);
-                  const label = socialLabel(url);
-                  const Icon = socialIcon(url);
-                  return href ? (
-                    <a
-                      key={`${url}-${index}`}
-                      href={href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex max-w-full items-center gap-2 truncate border border-border bg-background/70 px-3 py-1 text-xs text-foreground transition-colors hover:border-primary"
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{label}</span>
-                    </a>
-                  ) : (
-                    <span key={`${url}-${index}`} className="flex max-w-full items-center gap-2 truncate border border-border bg-background/70 px-3 py-1 text-xs text-muted-foreground">
-                      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{label}</span>
-                    </span>
-                  );
-                })}
+          <CardHeader className="pt-32 md:min-h-52 md:pt-36">
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(12rem,18rem)] md:items-start">
+              <div className="min-w-0 space-y-3">
+                <CardTitle>{profile.displayName}</CardTitle>
+                {bio.trim() ? (
+                  <CardDescription className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed">
+                    {bio.trim()}
+                  </CardDescription>
+                ) : null}
               </div>
-            ) : null}
+              {previewSocialLinks.length ? (
+                <div className="flex min-w-0 flex-col gap-2 md:items-end">
+                  {previewSocialLinks.map((url, index) => {
+                    const href = safeSocialUrl(url);
+                    const label = socialLabel(url);
+                    const Icon = socialIcon(url);
+                    return href ? (
+                      <a
+                        key={`${url}-${index}`}
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex max-w-full items-center gap-2 text-sm text-muted-foreground underline decoration-border underline-offset-4 transition-colors hover:text-foreground hover:decoration-primary"
+                      >
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{label}</span>
+                      </a>
+                    ) : (
+                      <span key={`${url}-${index}`} className="inline-flex max-w-full items-center gap-2 text-sm text-muted-foreground">
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{label}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
           </CardHeader>
         </Card>
 
