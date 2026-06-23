@@ -168,9 +168,10 @@ export const authApi = {
   getAdminAccount: (id: string) =>
     request<AdminAccountDetailResponse & ErrorResponse>(`/admin/accounts/${id}`),
 
-  listAuditEvents: (eventType: string, page: number, pageSize: number, signal?: AbortSignal) => {
+  listAuditEvents: (eventType: string, page: number, pageSize: number, accountId?: string, signal?: AbortSignal) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (eventType.trim()) params.set("eventType", eventType.trim());
+    if (accountId?.trim()) params.set("accountId", accountId.trim());
     return request<AuditEventListResponse & ErrorResponse>(`/admin/audit-events?${params}`, { signal });
   },
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiFileText, FiGrid, FiHome, FiKey, FiMoreHorizontal, FiSettings, FiShield, FiUsers } from "react-icons/fi";
 import {
@@ -66,6 +66,7 @@ import { UserFilterSettings } from "./UserFilterSettings";
 import { EMPTY_USER_FILTERS } from "./userFilters";
 
 type AdminSection = "overview" | "users" | "roles" | "permissions" | "audits";
+const ADMIN_DIALOG_SCROLL_CLASS = "max-h-[calc(100dvh-2rem)] overflow-y-auto";
 
 type ActionMenuItem = {
   label: string;
@@ -497,6 +498,9 @@ export default function Admin() {
   const [auditsError, setAuditsError] = useState("");
   const [auditEventType, setAuditEventType] = useState("");
   const [debouncedAuditEventType, setDebouncedAuditEventType] = useState("");
+  const [auditUserSearch, setAuditUserSearch] = useState("");
+  const [auditAccountFilter, setAuditAccountFilter] = useState<AuditAccountSummary | null>(null);
+  const [auditUserSearchLoading, setAuditUserSearchLoading] = useState(false);
   const [auditsPage, setAuditsPage] = useState(1);
   const [auditsPageSize, setAuditsPageSize] = useState(50);
   const [auditsRefreshKey, setAuditsRefreshKey] = useState(0);
@@ -642,7 +646,7 @@ export default function Admin() {
     setAuditsLoading(true);
     setAuditsError("");
 
-    authApi.listAuditEvents(debouncedAuditEventType, auditsPage, auditsPageSize, controller.signal)
+    authApi.listAuditEvents(debouncedAuditEventType, auditsPage, auditsPageSize, auditAccountFilter?.accountId, controller.signal)
       .then(({ ok, data }) => {
         if (controller.signal.aborted) return;
         if (ok) {
@@ -662,7 +666,7 @@ export default function Admin() {
       });
 
     return () => controller.abort();
-  }, [auditsPage, auditsPageSize, auditsRefreshKey, canReadAudits, debouncedAuditEventType, section]);
+  }, [auditAccountFilter?.accountId, auditsPage, auditsPageSize, auditsRefreshKey, canReadAudits, debouncedAuditEventType, section]);
 
   useEffect(() => {
     if (!canReadUsers || !canReadAudits || section !== "audits" || !auditEvents.length) return;
@@ -724,6 +728,60 @@ export default function Admin() {
 
   function refetchAudits() {
     setAuditsRefreshKey((current) => current + 1);
+  }
+
+  function clearAuditAccountFilter() {
+    setAuditUserSearch("");
+    setAuditAccountFilter(null);
+    setAuditsPage(1);
+  }
+
+  async function applyAuditAccountSearch() {
+    const query = auditUserSearch.trim();
+    setAuditsPage(1);
+    if (!query) {
+      setAuditAccountFilter(null);
+      return;
+    }
+
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query)) {
+      setAuditAccountFilter({ accountId: query });
+      return;
+    }
+
+    if (!canReadUsers) {
+      toast.error("Could not filter user", { description: "User search requires users.read." });
+      return;
+    }
+
+    setAuditUserSearchLoading(true);
+    try {
+      const { ok, data } = await authApi.listAdminAccounts(query, 1, 1, EMPTY_USER_FILTERS);
+      const user = ok ? data.accounts?.[0] : null;
+      if (!user) {
+        toast.error("No matching user");
+        return;
+      }
+
+      setAuditAccountFilter({ accountId: user.accountId, displayName: user.displayName, email: user.email });
+      setAuditUserSearch(user.email || user.displayName || user.accountId);
+    } catch (error) {
+      toast.error("Could not filter user", { description: error instanceof Error ? error.message : undefined });
+    } finally {
+      setAuditUserSearchLoading(false);
+    }
+  }
+
+  function openFullAuditForDetail() {
+    if (!detail) return;
+
+    setAuditAccountFilter({ accountId: detail.accountId, displayName: detail.displayName, email: detail.email });
+    setAuditUserSearch(detail.email || detail.displayName || detail.accountId);
+    setAuditEventType("");
+    setDebouncedAuditEventType("");
+    setAuditsPage(1);
+    setDetailOpen(false);
+    setSection("audits");
   }
 
   function openCreateRole() {
@@ -953,6 +1011,7 @@ export default function Admin() {
   const auditColumns = auditViewMode === "readable" ? readableAuditColumns : technicalAuditColumns;
 
   const oauthLinks = detail?.oAuthLinks ?? (detail as unknown as { oauthLinks?: AdminAccountDetailResponse["oAuthLinks"] } | null)?.oauthLinks ?? [];
+  const recentAuditEvents = detail?.recentAuditEvents.slice(0, 5) ?? [];
   const permissionGroups = permissions.reduce<Record<string, PermissionResponse[]>>((groups, permission) => {
     (groups[permission.category] ??= []).push(permission);
     return groups;
@@ -1192,6 +1251,30 @@ export default function Admin() {
                 <CardContent>
                   <FilterBar>
                     <SearchInput value={auditEventType} onChange={(event: ChangeEvent<HTMLInputElement>) => setAuditEventType(event.target.value)} onClear={() => setAuditEventType("")} placeholder="Filter event type" className="min-w-72" />
+                    <div className="flex min-w-72 items-center gap-2">
+                      <SearchInput
+                        value={auditUserSearch}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) => setAuditUserSearch(event.target.value)}
+                        onClear={clearAuditAccountFilter}
+                        onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            void applyAuditAccountSearch();
+                          }
+                        }}
+                        placeholder="Filter user email, name, or id"
+                        className="min-w-0 flex-1"
+                      />
+                      <Button type="button" variant="secondary" disabled={auditUserSearchLoading} onClick={() => void applyAuditAccountSearch()}>
+                        {auditUserSearchLoading ? "Finding" : "Apply"}
+                      </Button>
+                    </div>
+                    {auditAccountFilter ? (
+                      <Badge variant="secondary" className="gap-2">
+                        User: {formatAuditAccount(auditAccountFilter, auditAccountFilter.accountId)}
+                        <button type="button" className="text-muted-foreground hover:text-foreground" onClick={clearAuditAccountFilter} aria-label="Clear user audit filter">×</button>
+                      </Badge>
+                    ) : null}
                     <div className="flex items-center gap-2">
                       <Label htmlFor="audit-view-mode" className="text-sm text-muted-foreground">View</Label>
                       <Select value={auditViewMode} onValueChange={(value) => setAuditViewMode(value === "technical" ? "technical" : "readable")}>
@@ -1238,7 +1321,7 @@ export default function Admin() {
       </div>
 
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className={`max-w-3xl ${ADMIN_DIALOG_SCROLL_CLASS}`}>
           <DialogHeader>
             <DialogTitle>{detail?.displayName ?? "User details"}</DialogTitle>
             <DialogDescription>{detail?.email ?? "Loading account detail."}</DialogDescription>
@@ -1248,14 +1331,22 @@ export default function Admin() {
               <Card><CardContent className="space-y-2 p-4"><div><b>Photon:</b> {detail.photonUserId}</div><div><b>Sessions:</b> {detail.activeSessionCount}</div><div><b>Created:</b> {formatDate(detail.createdAt)}</div><div><b>Updated:</b> {formatDate(detail.updatedAt)}</div></CardContent></Card>
               <Card><CardContent className="space-y-2 p-4"><div><b>Password:</b> {detail.hasPassword ? "Yes" : "No"}</div><div><b>IP:</b> {detail.creationIpAddress ?? "—"}</div><div><b>Patreon:</b> {detail.patreon?.linked ? "Linked" : "Unlinked"}</div></CardContent></Card>
               <Card className="md:col-span-2"><CardHeader><CardTitle>OAuth links</CardTitle></CardHeader><CardContent>{oauthLinks.length ? oauthLinks.map((link) => <div key={`${link.provider}-${link.providerUserId}`}>{link.provider}: {link.providerEmail ?? link.providerUserId}</div>) : "None"}</CardContent></Card>
-              <Card className="md:col-span-2"><CardHeader><CardTitle>Recent audit</CardTitle></CardHeader><CardContent className="space-y-2">{detail.recentAuditEvents.length ? detail.recentAuditEvents.map((event) => <div key={event.id} className="flex flex-wrap items-center gap-2"><span className="tabular-nums text-muted-foreground">{formatAuditTimestamp(event.createdAt)}</span>{renderAuditActivity(event, roles, auditAccountLookup)}</div>) : "None"}</CardContent></Card>
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <CardTitle>Recent audit</CardTitle>
+                    {canReadAudits ? <Button type="button" variant="secondary" className="gap-2" onClick={openFullAuditForDetail}><FiFileText className="h-4 w-4" />View Full Audit</Button> : null}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">{recentAuditEvents.length ? recentAuditEvents.map((event) => <div key={event.id} className="flex flex-wrap items-center gap-2"><span className="tabular-nums text-muted-foreground">{formatAuditTimestamp(event.createdAt)}</span>{renderAuditActivity(event, roles, auditAccountLookup)}</div>) : "None"}</CardContent>
+              </Card>
             </div>
           ) : null}
         </DialogContent>
       </Dialog>
 
       <Dialog open={editUser !== null} onOpenChange={(open) => !open && setEditUser(null)}>
-        <DialogContent>
+        <DialogContent className={ADMIN_DIALOG_SCROLL_CLASS}>
           <DialogHeader>
             <DialogTitle>Edit user</DialogTitle>
             <DialogDescription>{editUser?.email}</DialogDescription>
@@ -1269,7 +1360,7 @@ export default function Admin() {
       </Dialog>
 
       <Dialog open={assignUser !== null} onOpenChange={(open) => !open && setAssignUser(null)}>
-        <DialogContent>
+        <DialogContent className={ADMIN_DIALOG_SCROLL_CLASS}>
           <DialogHeader>
             <DialogTitle>Manage roles</DialogTitle>
             <DialogDescription>{assignUser?.email}</DialogDescription>
@@ -1292,7 +1383,7 @@ export default function Admin() {
       </Dialog>
 
       <Dialog open={roleFormMode !== null} onOpenChange={(open) => !open && setRoleFormMode(null)}>
-        <DialogContent>
+        <DialogContent className={ADMIN_DIALOG_SCROLL_CLASS}>
           <DialogHeader>
             <DialogTitle>{roleFormMode === "create" ? "Create role" : "Edit role"}</DialogTitle>
             <DialogDescription>{editingRole?.name ?? "Add a role and choose permissions."}</DialogDescription>
