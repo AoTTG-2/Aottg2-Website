@@ -68,3 +68,8 @@ export function buildWorkshopCallbackUrl(next: Extract<LoginNext, { kind: "works
   callback.searchParams.set("next", `${target.pathname}${target.search}${target.hash}`);
   return callback.href;
 }
+
+export function redirectHref(next: LoginNext | null, fallback = "/"): string {
+  if (!next) return fallback;
+  return next.kind === "internal" ? next.path : next.href;
+}

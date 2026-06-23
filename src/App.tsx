@@ -22,6 +22,7 @@ import { AuthNavbar } from "./page/Auth/AuthNavbar";
 
 const Credits = lazy(() => import("./page/Credits"));
 const Login = lazy(() => import("./page/Login"));
+const Logout = lazy(() => import("./page/Logout"));
 const Register = lazy(() => import("./page/Register"));
 const Verify = lazy(() => import("./page/Verify"));
 const ResendVerification = lazy(() => import("./page/ResendVerification"));
@@ -36,6 +37,7 @@ type SectionRefs = Record<string, RefObject<HTMLDivElement>>;
 
 const AUTH_ROUTE_PREFIXES = [
   "/login",
+  "/logout",
   "/register",
   "/verify",
   "/resend-verification",
@@ -184,6 +186,7 @@ function App() {
             </Route>
             <Route element={<AccountsLayout />}>
               <Route path="/login" element={<Login />} />
+              <Route path="/logout" element={<Logout />} />
               <Route path="/register" element={<Register />} />
               <Route path="/verify" element={<Verify />} />
               <Route path="/resend-verification" element={<ResendVerification />} />
