@@ -14,6 +14,10 @@ import {
   cn,
   toast,
 } from "@aottg2/ui";
+import { FaDiscord, FaFacebookF, FaInstagram, FaYoutube } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
+import { FiLink } from "react-icons/fi";
+import type { IconType } from "react-icons";
 import { authApi, authAssetUrl } from "../../auth/api";
 import type { ProfilePreset, ProfilePresetCatalog } from "../../auth/types";
 import { useAuth } from "../../auth/useAuth";
@@ -42,10 +46,22 @@ function safeSocialUrl(url: string) {
 function socialLabel(url: string) {
   try {
     const parsed = new URL(url);
-    return parsed.hostname.replace(/^www\./, "") || parsed.toString();
+    const host = parsed.hostname.replace(/^www\./, "");
+    const path = `${parsed.pathname}${parsed.search}`.replace(/\/$/, "");
+    return `${host}${path}`;
   } catch {
     return url;
   }
+}
+
+function socialIcon(url: string): IconType {
+  const host = safeSocialUrl(url) ? new URL(url).hostname.replace(/^www\./, "").toLowerCase() : "";
+  if (host === "discord.gg" || host.endsWith("discord.com")) return FaDiscord;
+  if (host.endsWith("facebook.com") || host === "fb.com") return FaFacebookF;
+  if (host.endsWith("instagram.com")) return FaInstagram;
+  if (host === "x.com" || host.endsWith("twitter.com")) return FaXTwitter;
+  if (host.endsWith("youtube.com") || host === "youtu.be") return FaYoutube;
+  return FiLink;
 }
 
 function PresetButton({
@@ -215,7 +231,7 @@ export default function Profile() {
               )}
             </div>
           </div>
-          <CardHeader className="gap-3 pt-16 md:min-h-36 md:pl-44 md:pt-10">
+          <CardHeader className="gap-3 pt-24 md:min-h-44 md:pt-24">
             <CardTitle>{profile.displayName}</CardTitle>
             {bio.trim() ? (
               <CardDescription className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed">
@@ -227,19 +243,22 @@ export default function Profile() {
                 {previewSocialLinks.map((url, index) => {
                   const href = safeSocialUrl(url);
                   const label = socialLabel(url);
+                  const Icon = socialIcon(url);
                   return href ? (
                     <a
                       key={`${url}-${index}`}
                       href={href}
                       target="_blank"
                       rel="noreferrer"
-                      className="max-w-full truncate border border-border bg-background/70 px-3 py-1 text-xs text-foreground transition-colors hover:border-primary"
+                      className="flex max-w-full items-center gap-2 truncate border border-border bg-background/70 px-3 py-1 text-xs text-foreground transition-colors hover:border-primary"
                     >
-                      {label}
+                      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{label}</span>
                     </a>
                   ) : (
-                    <span key={`${url}-${index}`} className="max-w-full truncate border border-border bg-background/70 px-3 py-1 text-xs text-muted-foreground">
-                      {label}
+                    <span key={`${url}-${index}`} className="flex max-w-full items-center gap-2 truncate border border-border bg-background/70 px-3 py-1 text-xs text-muted-foreground">
+                      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{label}</span>
                     </span>
                   );
                 })}
