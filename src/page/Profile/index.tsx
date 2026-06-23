@@ -18,25 +18,34 @@ import { authApi, authAssetUrl } from "../../auth/api";
 import type { ProfilePreset, ProfilePresetCatalog } from "../../auth/types";
 import { useAuth } from "../../auth/useAuth";
 
-const socialFields = [
-  { key: "discord", label: "Discord", type: "text" },
-  { key: "x", label: "X", type: "url" },
-  { key: "youtube", label: "YouTube", type: "url" },
-  { key: "website", label: "Website", type: "url" },
-] as const;
-
-type SocialKey = typeof socialFields[number]["key"];
-type SocialDraft = Record<SocialKey, string>;
-
-const emptySocials: SocialDraft = {
-  discord: "",
-  x: "",
-  youtube: "",
-  website: "",
-};
+const MAX_SOCIAL_LINKS = 6;
 
 function imageUrl(preset?: ProfilePreset) {
   return preset ? authAssetUrl(preset.imageUrl) : "";
+}
+
+function socialLinksFromProfile(socials?: Record<string, string>) {
+  return Object.values(socials ?? {})
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .slice(0, MAX_SOCIAL_LINKS);
+}
+
+function safeSocialUrl(url: string) {
+  try {
+    return new URL(url).toString();
+  } catch {
+    return null;
+  }
+}
+
+function socialLabel(url: string) {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, "") || parsed.toString();
+  } catch {
+    return url;
+  }
 }
 
 function PresetButton({
@@ -76,7 +85,7 @@ export default function Profile() {
   const [catalog, setCatalog] = useState<ProfilePresetCatalog | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [bio, setBio] = useState("");
-  const [socials, setSocials] = useState<SocialDraft>(emptySocials);
+  const [socialLinks, setSocialLinks] = useState<string[]>([]);
   const [avatarKey, setAvatarKey] = useState("");
   const [bannerKey, setBannerKey] = useState("");
   const [saving, setSaving] = useState(false);
@@ -92,12 +101,7 @@ export default function Profile() {
     setBio(profile.description ?? "");
     setAvatarKey(profile.avatarKey ?? "");
     setBannerKey(profile.bannerKey ?? "");
-    setSocials({
-      discord: profile.socials?.discord ?? "",
-      x: profile.socials?.x ?? "",
-      youtube: profile.socials?.youtube ?? "",
-      website: profile.socials?.website ?? "",
-    });
+    setSocialLinks(socialLinksFromProfile(profile.socials));
   }, [profile]);
 
   useEffect(() => {
@@ -126,21 +130,38 @@ export default function Profile() {
     () => catalog?.banners.find((preset) => preset.key === bannerKey),
     [bannerKey, catalog],
   );
+  const previewSocialLinks = useMemo(
+    () => socialLinks.map((url) => url.trim()).filter(Boolean).slice(0, MAX_SOCIAL_LINKS),
+    [socialLinks],
+  );
 
-  function updateSocial(key: SocialKey, value: string) {
-    setSocials((current) => ({ ...current, [key]: value }));
+  function updateSocialLink(index: number, value: string) {
+    setSocialLinks((current) => current.map((url, currentIndex) => (
+      currentIndex === index ? value : url
+    )));
+  }
+
+  function addSocialLink() {
+    setSocialLinks((current) => (
+      current.length >= MAX_SOCIAL_LINKS ? current : [...current, ""]
+    ));
+  }
+
+  function removeSocialLink(index: number) {
+    setSocialLinks((current) => current.filter((_, currentIndex) => currentIndex !== index));
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!profile) return;
 
-    const nextSocials = { ...(profile.socials ?? {}) };
-    for (const field of socialFields) {
-      const value = socials[field.key].trim();
-      if (value) nextSocials[field.key] = value;
-      else delete nextSocials[field.key];
-    }
+    const nextSocials = Object.fromEntries(
+      socialLinks
+        .map((url) => url.trim())
+        .filter(Boolean)
+        .slice(0, MAX_SOCIAL_LINKS)
+        .map((url, index) => [`link${index + 1}`, url]),
+    );
 
     setSaving(true);
     try {
@@ -194,9 +215,36 @@ export default function Profile() {
               )}
             </div>
           </div>
-          <CardHeader className="pt-14 md:pt-16">
+          <CardHeader className="gap-3 pt-16 md:min-h-36 md:pl-44 md:pt-10">
             <CardTitle>{profile.displayName}</CardTitle>
-            <CardDescription>{profile.photonUserId}</CardDescription>
+            {bio.trim() ? (
+              <CardDescription className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed">
+                {bio.trim()}
+              </CardDescription>
+            ) : null}
+            {previewSocialLinks.length ? (
+              <div className="flex flex-wrap gap-2">
+                {previewSocialLinks.map((url, index) => {
+                  const href = safeSocialUrl(url);
+                  const label = socialLabel(url);
+                  return href ? (
+                    <a
+                      key={`${url}-${index}`}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="max-w-full truncate border border-border bg-background/70 px-3 py-1 text-xs text-foreground transition-colors hover:border-primary"
+                    >
+                      {label}
+                    </a>
+                  ) : (
+                    <span key={`${url}-${index}`} className="max-w-full truncate border border-border bg-background/70 px-3 py-1 text-xs text-muted-foreground">
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+            ) : null}
           </CardHeader>
         </Card>
 
@@ -211,18 +259,36 @@ export default function Profile() {
                 <Textarea id="profile-bio" value={bio} onChange={(event) => setBio(event.target.value)} maxLength={512} rows={7} />
                 <span className="block text-right text-xs text-muted-foreground">{bio.length}/512</span>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {socialFields.map((field) => (
-                  <div key={field.key} className="space-y-2">
-                    <Label htmlFor={`profile-social-${field.key}`}>{field.label}</Label>
-                    <Input
-                      id={`profile-social-${field.key}`}
-                      type={field.type}
-                      value={socials[field.key]}
-                      onChange={(event) => updateSocial(field.key, event.target.value)}
-                    />
-                  </div>
-                ))}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Label>Social URLs</Label>
+                  <Button type="button" variant="secondary" size="sm" onClick={addSocialLink} disabled={socialLinks.length >= MAX_SOCIAL_LINKS}>
+                    Add URL
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {socialLinks.map((url, index) => (
+                    <div key={index} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <Label htmlFor={`profile-social-${index}`} className="sr-only">
+                        Social URL {index + 1}
+                      </Label>
+                      <Input
+                        id={`profile-social-${index}`}
+                        type="url"
+                        value={url}
+                        maxLength={256}
+                        placeholder="https://example.com"
+                        onChange={(event) => updateSocialLink(index, event.target.value)}
+                      />
+                      <Button type="button" variant="secondary" onClick={() => removeSocialLink(index)}>
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  {socialLinks.length >= MAX_SOCIAL_LINKS ? (
+                    <p className="text-xs text-muted-foreground">Maximum {MAX_SOCIAL_LINKS} URLs.</p>
+                  ) : null}
+                </div>
               </div>
             </CardContent>
           </Card>
