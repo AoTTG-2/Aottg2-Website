@@ -124,7 +124,8 @@ function formatMoneyCents(value?: number | null) {
 
 function patreonStatusText(patreon?: ProfileResponse["patreon"]) {
   if (!patreon?.linked) return "Unlinked";
-  return patreon.manualOverride ? "Manual override" : patreon.patronStatus ?? "Linked";
+  if (patreon.manualOverride) return "Manual";
+  return patreon.patronStatus === "active_patron" ? "Linked" : patreon.patronStatus ?? "Linked";
 }
 
 function usagePercent(sent: number, limit: number) {
@@ -1307,7 +1308,16 @@ export default function Admin() {
     {
       key: "patreon",
       header: "Patreon",
-      cell: (user: ProfileResponse) => <StatusBadge status={user.patreon?.linked ? "active" : "draft"}>{patreonStatusText(user.patreon)}</StatusBadge>,
+      cell: (user: ProfileResponse) => (
+        <div className="space-y-1.5">
+          <StatusBadge status={user.patreon?.linked ? "active" : "draft"}>{patreonStatusText(user.patreon)}</StatusBadge>
+          {user.patreon?.tierIds.length ? (
+            <div className="flex flex-wrap gap-1">
+              {user.patreon.tierIds.map((tierId) => <Badge key={tierId} variant="secondary">{tierId}</Badge>)}
+            </div>
+          ) : null}
+        </div>
+      ),
     },
     { key: "created", header: "Created", cell: (user: ProfileResponse) => formatDate(user.createdAt) },
     {
