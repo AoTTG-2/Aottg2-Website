@@ -12,6 +12,8 @@ import type {
   ErrorResponse,
   OAuthProvider,
   OAuthStartResponse,
+  PatreonTierLabelsResponse,
+  PatreonTierResponse,
   PermissionResponse,
   ProfileResponse,
   RegisterResponse,
@@ -189,6 +191,27 @@ export const authApi = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+
+  listPatreonTiers: () =>
+    request<PatreonTierResponse[] & ErrorResponse>("/admin/patreon/tiers"),
+
+  getPatreonTierLabels: () =>
+    request<PatreonTierLabelsResponse & ErrorResponse>("/admin/patreon/tier-labels"),
+
+  updatePatreonTierLabels: (tiers: PatreonTierResponse[]) =>
+    request<PatreonTierLabelsResponse & ErrorResponse>("/admin/patreon/tier-labels", {
+      method: "PUT",
+      body: JSON.stringify({ tiers }),
+    }),
+
+  updateAdminPatreon: (id: string, body: { tierIds: string[]; patronStatus?: string; entitledAmountCents?: number | null }) =>
+    request<ProfileResponse["patreon"] & ErrorResponse>(`/admin/accounts/${id}/patreon`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  refreshAdminPatreon: (id: string) =>
+    request<ProfileResponse["patreon"] & ErrorResponse>(`/admin/accounts/${id}/patreon/refresh`, { method: "POST" }),
 
   listPermissions: () =>
     request<PermissionResponse[] & ErrorResponse>("/admin/permissions"),

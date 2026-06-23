@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiGrid, FiHome, FiKey, FiMail, FiMoreHorizontal, FiSettings, FiShield, FiUsers } from "react-icons/fi";
+import { FiFileText, FiGrid, FiHeart, FiHome, FiKey, FiMail, FiMoreHorizontal, FiSettings, FiShield, FiUsers } from "react-icons/fi";
 import {
   Badge,
   Button,
@@ -61,12 +61,12 @@ import {
 import { authApi } from "../../auth/api";
 import { ADMIN_ACCESS_PERMISSIONS } from "../../auth/adminPermissions";
 import { useAuth } from "../../auth/useAuth";
-import type { AdminAccountDetailResponse, AdminAccountFilters, AuditEventResponse, EmailLimitStatusResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
+import type { AdminAccountDetailResponse, AdminAccountFilters, AuditEventResponse, EmailLimitStatusResponse, PatreonTierResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
 import { AuditFilterSettings } from "./AuditFilterSettings";
 import { UserFilterSettings } from "./UserFilterSettings";
 import { EMPTY_USER_FILTERS } from "./userFilters";
 
-type AdminSection = "overview" | "users" | "roles" | "permissions" | "audits" | "emails";
+type AdminSection = "overview" | "users" | "roles" | "permissions" | "audits" | "emails" | "patreon";
 const ADMIN_DIALOG_SCROLL_CLASS = "max-h-[calc(100dvh-2rem)] overflow-y-auto";
 
 type ActionMenuItem = {
@@ -116,6 +116,10 @@ function formatAuditTimestamp(value?: string) {
 
 function formatCount(value?: number) {
   return new Intl.NumberFormat().format(value ?? 0);
+}
+
+function formatMoneyCents(value?: number | null) {
+  return value == null ? "—" : `$${(value / 100).toFixed(2)}`;
 }
 
 function usagePercent(sent: number, limit: number) {
@@ -310,6 +314,34 @@ function renderAuditActivity(event: AuditEventResponse, roles: RoleResponse[], a
           <AuditName>{actor}</AuditName>
           <AuditAction>updated</AuditAction>
           <AuditValue>email service limits</AuditValue>
+        </span>
+      );
+    case "admin.patreon_tiers_updated":
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction>updated</AuditAction>
+          <AuditValue>Patreon tiers</AuditValue>
+          <span>for</span>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+    case "admin.patreon_tiers_refreshed":
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction>refreshed</AuditAction>
+          <AuditValue>Patreon tiers</AuditValue>
+          <span>for</span>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+    case "admin.patreon_tier_labels_updated":
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction>updated</AuditAction>
+          <AuditValue>Patreon tier labels</AuditValue>
         </span>
       );
     case "account.registered":
@@ -513,6 +545,7 @@ export default function Admin() {
   const canReadAudits = can("audits.read");
   const canReadEmails = can("emails.read");
   const canUpdateEmails = isAdmin && can("emails.update");
+  const canManagePatreon = isAdmin;
   const [section, setSection] = useState<AdminSection>("overview");
   const [roles, setRoles] = useState<RoleResponse[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -532,6 +565,12 @@ export default function Admin() {
   const [monthlyResetDay, setMonthlyResetDay] = useState("");
   const [dailyResetHourUtc, setDailyResetHourUtc] = useState("");
   const [emailLimitsSaving, setEmailLimitsSaving] = useState(false);
+  const [patreonTiers, setPatreonTiers] = useState<PatreonTierResponse[]>([]);
+  const [patreonTiersLoading, setPatreonTiersLoading] = useState(false);
+  const [patreonTiersError, setPatreonTiersError] = useState("");
+  const [patreonTierLabelsJson, setPatreonTierLabelsJson] = useState("[]");
+  const [patreonTierLabelsSaving, setPatreonTierLabelsSaving] = useState(false);
+  const [patreonRefreshKey, setPatreonRefreshKey] = useState(0);
   const [auditEvents, setAuditEvents] = useState<AuditEventResponse[]>([]);
   const [auditsTotal, setAuditsTotal] = useState(0);
   const [auditsLoading, setAuditsLoading] = useState(false);
@@ -564,6 +603,11 @@ export default function Admin() {
   const [editVerified, setEditVerified] = useState(false);
   const [assignUser, setAssignUser] = useState<ProfileResponse | null>(null);
   const [roleDraft, setRoleDraft] = useState<string[]>([]);
+  const [patreonUser, setPatreonUser] = useState<ProfileResponse | AdminAccountDetailResponse | null>(null);
+  const [patreonTierDraft, setPatreonTierDraft] = useState<string[]>([]);
+  const [patreonStatusDraft, setPatreonStatusDraft] = useState("");
+  const [patreonAmountDraft, setPatreonAmountDraft] = useState("");
+  const [patreonCustomTier, setPatreonCustomTier] = useState("");
   const [deleteUser, setDeleteUser] = useState<ProfileResponse | null>(null);
   const [roleFormMode, setRoleFormMode] = useState<"create" | "edit" | null>(null);
   const [editingRole, setEditingRole] = useState<RoleResponse | null>(null);
@@ -583,6 +627,7 @@ export default function Admin() {
     { id: "permissions", label: "Permissions", icon: <FiKey />, visible: canReadPermissions },
     { id: "audits", label: "Audit logs", icon: <FiFileText />, visible: canReadAudits },
     { id: "emails", label: "Email Service", icon: <FiMail />, visible: canReadEmails },
+    { id: "patreon", label: "Patreon", icon: <FiHeart />, visible: canManagePatreon },
   ];
   const visibleSectionItems = sectionItems.filter((item) => item.visible);
 
@@ -683,6 +728,30 @@ export default function Admin() {
 
     return () => controller.abort();
   }, [canReadEmails, emailLimitsRefreshKey, section]);
+
+  useEffect(() => {
+    if (!canManagePatreon || section !== "patreon") return;
+
+    setPatreonTiersLoading(true);
+    setPatreonTiersError("");
+
+    Promise.all([authApi.listPatreonTiers(), authApi.getPatreonTierLabels()])
+      .then(([tiersResult, labelsResult]) => {
+        if (tiersResult.ok) {
+          setPatreonTiers(Array.isArray(tiersResult.data) ? tiersResult.data : []);
+        } else {
+          setPatreonTiersError(tiersResult.data.error ?? "Could not load Patreon tiers.");
+        }
+
+        if (labelsResult.ok) {
+          setPatreonTierLabelsJson(JSON.stringify(labelsResult.data.tiers ?? [], null, 2));
+        }
+      })
+      .catch((error: unknown) => {
+        setPatreonTiersError(error instanceof Error ? error.message : "Could not load Patreon tiers.");
+      })
+      .finally(() => setPatreonTiersLoading(false));
+  }, [canManagePatreon, patreonRefreshKey, section]);
 
   useEffect(() => {
     if (!canReadUsers || section !== "users") return;
@@ -802,6 +871,10 @@ export default function Admin() {
 
   function refetchEmailLimits() {
     setEmailLimitsRefreshKey((current) => current + 1);
+  }
+
+  function refetchPatreon() {
+    setPatreonRefreshKey((current) => current + 1);
   }
 
   function refetchAudits() {
@@ -1010,6 +1083,22 @@ export default function Admin() {
     setRoleDraft(user.roles);
   }
 
+  function openPatreon(user: ProfileResponse | AdminAccountDetailResponse) {
+    setPatreonUser(user);
+    setPatreonTierDraft(user.patreon?.tierIds ?? []);
+    setPatreonStatusDraft(user.patreon?.patronStatus ?? "active_patron");
+    setPatreonAmountDraft(user.patreon?.entitledAmountCents == null ? "" : String(user.patreon.entitledAmountCents));
+    setPatreonCustomTier("");
+    if (!patreonTiers.length) refetchPatreon();
+  }
+
+  function addCustomPatreonTier() {
+    const tier = patreonCustomTier.trim();
+    if (!tier) return;
+    setPatreonTierDraft((current) => current.includes(tier) ? current : [...current, tier]);
+    setPatreonCustomTier("");
+  }
+
   async function runAction(label: string, action: () => Promise<{ ok: boolean; data: { error?: string } }>) {
     setActionLoading(true);
     try {
@@ -1071,6 +1160,89 @@ export default function Admin() {
     }
   }
 
+  async function savePatreonTiers() {
+    if (!patreonUser) return;
+    const amount = patreonAmountDraft.trim() ? Number(patreonAmountDraft) : null;
+    if (amount !== null && (!Number.isInteger(amount) || amount < 0)) {
+      toast.error("Invalid Patreon amount", { description: "Amount must be cents, like 500." });
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { ok, data } = await authApi.updateAdminPatreon(patreonUser.accountId, {
+        tierIds: patreonTierDraft,
+        patronStatus: patreonStatusDraft.trim() || undefined,
+        entitledAmountCents: amount,
+      });
+
+      if (!ok) {
+        toast.error("Patreon save failed", { description: data.error });
+        return;
+      }
+
+      toast.success("Patreon tiers saved");
+      if (detail?.accountId === patreonUser.accountId) setDetail({ ...detail, patreon: data });
+      setPatreonUser(null);
+      refetchUsers();
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Patreon save failed", { description: "Network error." });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function refreshUserPatreon(user: ProfileResponse | AdminAccountDetailResponse) {
+    setActionLoading(true);
+    try {
+      const { ok, data } = await authApi.refreshAdminPatreon(user.accountId);
+      if (!ok) {
+        toast.error("Patreon refresh failed", { description: data.error });
+        return;
+      }
+
+      toast.success("Patreon tiers refreshed");
+      if (detail?.accountId === user.accountId) setDetail({ ...detail, patreon: data });
+      refetchUsers();
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Patreon refresh failed", { description: "Network error." });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function savePatreonTierLabels() {
+    let tiers: PatreonTierResponse[];
+    try {
+      const parsed = JSON.parse(patreonTierLabelsJson) as PatreonTierResponse[];
+      if (!Array.isArray(parsed)) throw new Error("JSON must be an array.");
+      tiers = parsed;
+    } catch (error) {
+      toast.error("Invalid JSON", { description: error instanceof Error ? error.message : "Use an array of tier objects." });
+      return;
+    }
+
+    setPatreonTierLabelsSaving(true);
+    try {
+      const { ok, data } = await authApi.updatePatreonTierLabels(tiers);
+      if (!ok) {
+        toast.error("Patreon labels save failed", { description: data.error });
+        return;
+      }
+
+      setPatreonTierLabelsJson(JSON.stringify(data.tiers ?? [], null, 2));
+      toast.success("Patreon tier labels saved");
+      refetchPatreon();
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Patreon labels save failed", { description: "Network error." });
+    } finally {
+      setPatreonTierLabelsSaving(false);
+    }
+  }
+
   async function confirmDelete() {
     if (!deleteUser) return;
     const deleted = await runAction("User deleted", () => authApi.deleteAdminAccount(deleteUser.accountId));
@@ -1117,10 +1289,18 @@ export default function Admin() {
           canReadUsers ? { label: "View details", onSelect: () => void viewDetails(user) } : null,
           canUpdateUsers ? { label: "Edit profile", onSelect: () => openEdit(user) } : null,
           canManageUserRoles ? { label: "Manage roles", onSelect: () => openAssign(user) } : null,
+          canManagePatreon ? { label: "Manage Patreon", onSelect: () => openPatreon(user) } : null,
+          canManagePatreon && user.patreon?.linked ? { label: "Refresh Patreon", onSelect: () => void refreshUserPatreon(user) } : null,
           canDeleteUsers && user.accountId !== profile?.accountId ? { label: "Delete account", onSelect: () => setDeleteUser(user), destructive: true } : null,
         ].filter((item): item is ActionMenuItem => item !== null)} />
       ),
     },
+  ];
+
+  const patreonTierColumns = [
+    { key: "title", header: "Tier", cell: (tier: PatreonTierResponse) => <div><div className="font-semibold text-foreground">{tier.title}</div><div className="font-mono text-xs text-muted-foreground">{tier.id}</div></div> },
+    { key: "amount", header: "Amount", cell: (tier: PatreonTierResponse) => formatMoneyCents(tier.amountCents) },
+    { key: "source", header: "Source", cell: (tier: PatreonTierResponse) => <Badge variant={tier.fromPatreon ? "textured" : "secondary"}>{tier.fromPatreon ? "Patreon" : "JSON"}</Badge> },
   ];
 
   const readableAuditColumns = [
@@ -1154,6 +1334,19 @@ export default function Admin() {
   }, {});
   const emailMonthPercent = emailLimits ? usagePercent(emailLimits.month.sent, emailLimits.settings.monthlyHardLimit) : 0;
   const maxRecentEmailSends = Math.max(1, ...(emailLimits?.recentDays.map((day) => day.sent) ?? []));
+  const patreonTierIds = new Set(patreonTiers.map((tier) => tier.id));
+  const patreonTierItems: MultiSelectItem[] = [
+    ...patreonTiers.map((tier) => ({
+      key: tier.id,
+      label: tier.title,
+      search: `${tier.id} ${tier.title}`,
+      variant: tier.fromPatreon ? "textured" as BadgeVariant : "secondary" as BadgeVariant,
+      help: `${tier.id} · ${formatMoneyCents(tier.amountCents)}`,
+    })),
+    ...patreonTierDraft
+      .filter((tierId) => !patreonTierIds.has(tierId))
+      .map((tierId) => ({ key: tierId, label: tierId, variant: "outline" as BadgeVariant, help: "Custom tier id" })),
+  ];
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -1212,6 +1405,7 @@ export default function Admin() {
                   { title: "Permissions", description: "Read backend permission catalog.", section: "permissions" as AdminSection, visible: canReadPermissions },
                   { title: "Audit logs", description: "Review account and admin audit events.", section: "audits" as AdminSection, visible: canReadAudits },
                   { title: "Email Service", description: "Monitor SES usage and quota settings.", section: "emails" as AdminSection, visible: canReadEmails },
+                  { title: "Patreon", description: "Review live tiers and fallback labels.", section: "patreon" as AdminSection, visible: canManagePatreon },
                 ].filter((item) => item.visible).map((item) => (
                   <Card key={item.title} className="border-border bg-card text-card-foreground">
                     <CardHeader>
@@ -1504,6 +1698,58 @@ export default function Admin() {
             </>
           ) : null}
 
+          {section === "patreon" ? (
+            <>
+              <Card className="border-border bg-card text-card-foreground">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <CardTitle>Patreon</CardTitle>
+                      <CardDescription className="mt-2">Live campaign tiers and admin fallback labels.</CardDescription>
+                    </div>
+                    <Button type="button" variant="secondary" onClick={refetchPatreon}>Refresh</Button>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+                <Card className="border-border bg-card text-card-foreground">
+                  <CardHeader>
+                    <CardTitle>Tier catalog</CardTitle>
+                    <CardDescription className="mt-2">Fetched from Patreon, then merged with local label JSON.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {patreonTiersLoading ? (
+                      <div className="flex min-h-48 items-center justify-center p-6"><Spinner label="Loading Patreon tiers" /></div>
+                    ) : patreonTiersError ? (
+                      <EmptyState title="Could not load Patreon tiers" description={patreonTiersError} action={<Button type="button" onClick={refetchPatreon}>Try again</Button>} />
+                    ) : (
+                      <DataTable className="admin-data-table" columns={patreonTierColumns} data={patreonTiers} getRowKey={(tier) => tier.id} emptyTitle="No Patreon tiers" emptyDescription="Add fallback labels or configure creator token env." />
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border bg-card text-card-foreground">
+                  <CardHeader>
+                    <CardTitle>Label JSON</CardTitle>
+                    <CardDescription className="mt-2">Array of id, title, amountCents. Secrets stay in backend env.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Textarea
+                      value={patreonTierLabelsJson}
+                      onChange={(event) => setPatreonTierLabelsJson(event.target.value)}
+                      className="min-h-72 font-mono text-xs"
+                      spellCheck={false}
+                    />
+                    <Button type="button" className="w-full" disabled={patreonTierLabelsSaving} onClick={() => void savePatreonTierLabels()}>
+                      {patreonTierLabelsSaving ? "Saving..." : "Save label JSON"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : null}
+
           {section === "audits" ? (
             <>
               <Card className="border-border bg-card text-card-foreground">
@@ -1570,7 +1816,27 @@ export default function Admin() {
           {detailLoading ? <Spinner label="Loading user" /> : detail ? (
             <div className="grid gap-4 text-sm md:grid-cols-2">
               <Card><CardContent className="space-y-2 p-4"><div><b>Photon:</b> {detail.photonUserId}</div><div><b>Sessions:</b> {detail.activeSessionCount}</div><div><b>Created:</b> {formatDate(detail.createdAt)}</div><div><b>Updated:</b> {formatDate(detail.updatedAt)}</div></CardContent></Card>
-              <Card><CardContent className="space-y-2 p-4"><div><b>Password:</b> {detail.hasPassword ? "Yes" : "No"}</div><div><b>IP:</b> {detail.creationIpAddress ?? "—"}</div><div><b>Patreon:</b> {detail.patreon?.linked ? "Linked" : "Unlinked"}</div></CardContent></Card>
+              <Card>
+                <CardContent className="space-y-3 p-4">
+                  <div><b>Password:</b> {detail.hasPassword ? "Yes" : "No"}</div>
+                  <div><b>IP:</b> {detail.creationIpAddress ?? "—"}</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <b>Patreon:</b>
+                    <StatusBadge status={detail.patreon?.linked ? "active" : "draft"}>{detail.patreon?.linked ? detail.patreon.patronStatus ?? "Linked" : "Unlinked"}</StatusBadge>
+                  </div>
+                  {detail.patreon?.tierIds.length ? (
+                    <div className="flex flex-wrap gap-1">{detail.patreon.tierIds.map((tierId) => <Badge key={tierId} variant="secondary">{tierId}</Badge>)}</div>
+                  ) : null}
+                  <div className="text-muted-foreground">Pledge: {formatMoneyCents(detail.patreon?.entitledAmountCents)}</div>
+                  <div className="text-muted-foreground">Synced: {formatAuditTimestamp(detail.patreon?.lastSyncedAt ?? undefined)}</div>
+                  {canManagePatreon ? (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button type="button" variant="secondary" onClick={() => openPatreon(detail)}>Edit tiers</Button>
+                      <Button type="button" variant="secondary" disabled={actionLoading || !detail.patreon?.linked} onClick={() => void refreshUserPatreon(detail)}>Refresh tiers</Button>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
               <Card className="md:col-span-2"><CardHeader><CardTitle>OAuth links</CardTitle></CardHeader><CardContent>{oauthLinks.length ? oauthLinks.map((link) => <div key={`${link.provider}-${link.providerUserId}`}>{link.provider}: {link.providerEmail ?? link.providerUserId}</div>) : "None"}</CardContent></Card>
               <Card className="md:col-span-2">
                 <CardHeader>
@@ -1620,6 +1886,57 @@ export default function Admin() {
             />
           ) : <EmptyState title="No roles available" description="Role catalog failed." />}
           <DialogFooter><Button type="button" variant="secondary" onClick={() => setAssignUser(null)}>Cancel</Button><Button type="button" disabled={actionLoading} onClick={() => void saveRoles()}>Save roles</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={patreonUser !== null} onOpenChange={(open) => !open && setPatreonUser(null)}>
+        <DialogContent className={ADMIN_DIALOG_SCROLL_CLASS}>
+          <DialogHeader>
+            <DialogTitle>Manage Patreon</DialogTitle>
+            <DialogDescription>{patreonUser?.email}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tiers</Label>
+              <PillMultiSelect
+                ariaLabel="Manage Patreon tiers"
+                emptyText="No tiers selected"
+                items={patreonTierItems}
+                searchPlaceholder="Search Patreon tiers"
+                value={patreonTierDraft}
+                onChange={setPatreonTierDraft}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="space-y-2">
+                <Label htmlFor="customPatreonTier">Custom tier ID</Label>
+                <Input id="customPatreonTier" value={patreonCustomTier} onChange={(event) => setPatreonCustomTier(event.target.value)} />
+              </div>
+              <Button type="button" variant="secondary" className="self-end" onClick={addCustomPatreonTier}>Add tier</Button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="patreonStatus">Status</Label>
+                <Select value={patreonStatusDraft} onValueChange={setPatreonStatusDraft}>
+                  <SelectTrigger id="patreonStatus"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active_patron">active_patron</SelectItem>
+                    <SelectItem value="declined_patron">declined_patron</SelectItem>
+                    <SelectItem value="former_patron">former_patron</SelectItem>
+                    <SelectItem value="linked_pending_sync">linked_pending_sync</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="patreonAmount">Amount cents</Label>
+                <Input id="patreonAmount" type="number" min={0} value={patreonAmountDraft} onChange={(event) => setPatreonAmountDraft(event.target.value)} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setPatreonUser(null)}>Cancel</Button>
+            <Button type="button" disabled={actionLoading} onClick={() => void savePatreonTiers()}>Save Patreon</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

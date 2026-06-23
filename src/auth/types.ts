@@ -8,6 +8,17 @@ export interface PatreonStatus {
   lastSyncedAt: string | null;
 }
 
+export interface PatreonTierResponse {
+  id: string;
+  title: string;
+  amountCents: number | null;
+  fromPatreon: boolean;
+}
+
+export interface PatreonTierLabelsResponse {
+  tiers: PatreonTierResponse[];
+}
+
 export interface ProfileResponse {
   accountId: string;
   email: string;
