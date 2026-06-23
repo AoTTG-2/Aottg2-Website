@@ -8,6 +8,7 @@ import type {
   AuditEventListResponse,
   AuthResponse,
   CreateRoleRequest,
+  EmailLimitStatusResponse,
   ErrorResponse,
   OAuthProvider,
   OAuthStartResponse,
@@ -15,6 +16,7 @@ import type {
   ProfileResponse,
   RegisterResponse,
   RoleResponse,
+  UpdateEmailLimitSettingsRequest,
   UpdateRoleRequest,
 } from "./types";
 
@@ -174,6 +176,15 @@ export const authApi = {
     if (accountId?.trim()) params.set("accountId", accountId.trim());
     return request<AuditEventListResponse & ErrorResponse>(`/admin/audit-events?${params}`, { signal });
   },
+
+  getEmailLimits: (signal?: AbortSignal) =>
+    request<EmailLimitStatusResponse & ErrorResponse>("/admin/email-limits", { signal }),
+
+  updateEmailLimits: (body: UpdateEmailLimitSettingsRequest) =>
+    request<EmailLimitStatusResponse & ErrorResponse>("/admin/email-limits", {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
 
   listPermissions: () =>
     request<PermissionResponse[] & ErrorResponse>("/admin/permissions"),

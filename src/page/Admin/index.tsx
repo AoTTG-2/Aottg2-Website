@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiGrid, FiHome, FiKey, FiMoreHorizontal, FiSettings, FiShield, FiUsers } from "react-icons/fi";
+import { FiFileText, FiGrid, FiHome, FiKey, FiMail, FiMoreHorizontal, FiSettings, FiShield, FiUsers } from "react-icons/fi";
 import {
   Badge,
   Button,
@@ -61,12 +61,12 @@ import {
 import { authApi } from "../../auth/api";
 import { ADMIN_ACCESS_PERMISSIONS } from "../../auth/adminPermissions";
 import { useAuth } from "../../auth/useAuth";
-import type { AdminAccountDetailResponse, AdminAccountFilters, AuditEventResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
+import type { AdminAccountDetailResponse, AdminAccountFilters, AuditEventResponse, EmailLimitStatusResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
 import { AuditFilterSettings } from "./AuditFilterSettings";
 import { UserFilterSettings } from "./UserFilterSettings";
 import { EMPTY_USER_FILTERS } from "./userFilters";
 
-type AdminSection = "overview" | "users" | "roles" | "permissions" | "audits";
+type AdminSection = "overview" | "users" | "roles" | "permissions" | "audits" | "emails";
 const ADMIN_DIALOG_SCROLL_CLASS = "max-h-[calc(100dvh-2rem)] overflow-y-auto";
 
 type ActionMenuItem = {
@@ -112,6 +112,25 @@ function formatAuditTimestamp(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function formatCount(value?: number) {
+  return new Intl.NumberFormat().format(value ?? 0);
+}
+
+function usagePercent(sent: number, limit: number) {
+  if (limit <= 0) return 0;
+  return Math.min(100, Math.round((sent / limit) * 100));
+}
+
+function readPositiveInt(value: string) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function readBoundedInt(value: string, min: number, max: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= min && parsed <= max ? parsed : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -283,6 +302,14 @@ function renderAuditActivity(event: AuditEventResponse, roles: RoleResponse[], a
           <AuditAction>updated</AuditAction>
           <AuditName>{target}</AuditName>
           {renderAuditChanges(metadata)}
+        </span>
+      );
+    case "admin.email_limits_updated":
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction>updated</AuditAction>
+          <AuditValue>email service limits</AuditValue>
         </span>
       );
     case "account.registered":
@@ -484,6 +511,8 @@ export default function Admin() {
   const canDeleteSystemRoles = can("roles.system.delete");
   const canReadPermissions = can("permissions.read");
   const canReadAudits = can("audits.read");
+  const canReadEmails = can("emails.read");
+  const canUpdateEmails = isAdmin && can("emails.update");
   const [section, setSection] = useState<AdminSection>("overview");
   const [roles, setRoles] = useState<RoleResponse[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
@@ -493,6 +522,16 @@ export default function Admin() {
   const [permissionsLoading, setPermissionsLoading] = useState(false);
   const [permissionsError, setPermissionsError] = useState("");
   const [permissionsRefreshKey, setPermissionsRefreshKey] = useState(0);
+  const [emailLimits, setEmailLimits] = useState<EmailLimitStatusResponse | null>(null);
+  const [emailLimitsLoading, setEmailLimitsLoading] = useState(false);
+  const [emailLimitsError, setEmailLimitsError] = useState("");
+  const [emailLimitsRefreshKey, setEmailLimitsRefreshKey] = useState(0);
+  const [monthlyHardLimit, setMonthlyHardLimit] = useState("");
+  const [dailyRecipientLimit, setDailyRecipientLimit] = useState("");
+  const [dailyIpLimit, setDailyIpLimit] = useState("");
+  const [monthlyResetDay, setMonthlyResetDay] = useState("");
+  const [dailyResetHourUtc, setDailyResetHourUtc] = useState("");
+  const [emailLimitsSaving, setEmailLimitsSaving] = useState(false);
   const [auditEvents, setAuditEvents] = useState<AuditEventResponse[]>([]);
   const [auditsTotal, setAuditsTotal] = useState(0);
   const [auditsLoading, setAuditsLoading] = useState(false);
@@ -543,6 +582,7 @@ export default function Admin() {
     { id: "roles", label: "Roles", icon: <FiShield />, visible: canReadRoles },
     { id: "permissions", label: "Permissions", icon: <FiKey />, visible: canReadPermissions },
     { id: "audits", label: "Audit logs", icon: <FiFileText />, visible: canReadAudits },
+    { id: "emails", label: "Email Service", icon: <FiMail />, visible: canReadEmails },
   ];
   const visibleSectionItems = sectionItems.filter((item) => item.visible);
 
@@ -610,6 +650,39 @@ export default function Admin() {
       toast.error("Could not load permissions");
     }).finally(() => setPermissionsLoading(false));
   }, [canReadPermissions, permissionsRefreshKey]);
+
+  useEffect(() => {
+    if (!canReadEmails || section !== "emails") return;
+
+    const controller = new AbortController();
+    setEmailLimitsLoading(true);
+    setEmailLimitsError("");
+
+    authApi.getEmailLimits(controller.signal)
+      .then(({ ok, data }) => {
+        if (controller.signal.aborted) return;
+        if (ok) {
+          setEmailLimits(data);
+          setMonthlyHardLimit(String(data.settings.monthlyHardLimit));
+          setDailyRecipientLimit(String(data.settings.dailyRecipientLimit));
+          setDailyIpLimit(String(data.settings.dailyIpLimit));
+          setMonthlyResetDay(String(data.settings.monthlyResetDay));
+          setDailyResetHourUtc(String(data.settings.dailyResetHourUtc));
+        } else {
+          setEmailLimitsError(data.error ?? "Could not load email service limits.");
+        }
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          setEmailLimitsError(error instanceof Error ? error.message : "Could not load email service limits.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setEmailLimitsLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [canReadEmails, emailLimitsRefreshKey, section]);
 
   useEffect(() => {
     if (!canReadUsers || section !== "users") return;
@@ -725,6 +798,10 @@ export default function Admin() {
 
   function refetchPermissions() {
     setPermissionsRefreshKey((current) => current + 1);
+  }
+
+  function refetchEmailLimits() {
+    setEmailLimitsRefreshKey((current) => current + 1);
   }
 
   function refetchAudits() {
@@ -858,6 +935,54 @@ export default function Admin() {
       toast.error("Role delete failed", { description: "Network error." });
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  async function saveEmailLimits() {
+    const monthlyHardLimitValue = readPositiveInt(monthlyHardLimit);
+    const dailyRecipientLimitValue = readPositiveInt(dailyRecipientLimit);
+    const dailyIpLimitValue = readPositiveInt(dailyIpLimit);
+    const monthlyResetDayValue = readBoundedInt(monthlyResetDay, 1, 28);
+    const dailyResetHourUtcValue = readBoundedInt(dailyResetHourUtc, 0, 23);
+
+    if (
+      monthlyHardLimitValue === null ||
+      dailyRecipientLimitValue === null ||
+      dailyIpLimitValue === null ||
+      monthlyResetDayValue === null ||
+      dailyResetHourUtcValue === null
+    ) {
+      toast.error("Invalid email limits", { description: "Limits must be positive. Reset day is 1-28; reset hour is 0-23 UTC." });
+      return;
+    }
+
+    setEmailLimitsSaving(true);
+    try {
+      const { ok, data } = await authApi.updateEmailLimits({
+        monthlyHardLimit: monthlyHardLimitValue,
+        dailyRecipientLimit: dailyRecipientLimitValue,
+        dailyIpLimit: dailyIpLimitValue,
+        monthlyResetDay: monthlyResetDayValue,
+        dailyResetHourUtc: dailyResetHourUtcValue,
+      });
+
+      if (!ok) {
+        toast.error("Email limits save failed", { description: data.error });
+        return;
+      }
+
+      setEmailLimits(data);
+      setMonthlyHardLimit(String(data.settings.monthlyHardLimit));
+      setDailyRecipientLimit(String(data.settings.dailyRecipientLimit));
+      setDailyIpLimit(String(data.settings.dailyIpLimit));
+      setMonthlyResetDay(String(data.settings.monthlyResetDay));
+      setDailyResetHourUtc(String(data.settings.dailyResetHourUtc));
+      toast.success("Email limits saved");
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Email limits save failed", { description: "Network error." });
+    } finally {
+      setEmailLimitsSaving(false);
     }
   }
 
@@ -1027,6 +1152,8 @@ export default function Admin() {
     (groups[permission.category] ??= []).push(permission);
     return groups;
   }, {});
+  const emailMonthPercent = emailLimits ? usagePercent(emailLimits.month.sent, emailLimits.settings.monthlyHardLimit) : 0;
+  const maxRecentEmailSends = Math.max(1, ...(emailLimits?.recentDays.map((day) => day.sent) ?? []));
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -1084,6 +1211,7 @@ export default function Admin() {
                   { title: "Roles", description: "Create roles and set permissions.", section: "roles" as AdminSection, visible: canReadRoles },
                   { title: "Permissions", description: "Read backend permission catalog.", section: "permissions" as AdminSection, visible: canReadPermissions },
                   { title: "Audit logs", description: "Review account and admin audit events.", section: "audits" as AdminSection, visible: canReadAudits },
+                  { title: "Email Service", description: "Monitor SES usage and quota settings.", section: "emails" as AdminSection, visible: canReadEmails },
                 ].filter((item) => item.visible).map((item) => (
                   <Card key={item.title} className="border-border bg-card text-card-foreground">
                     <CardHeader>
@@ -1246,6 +1374,133 @@ export default function Admin() {
                   ))}
                 </div>
               )}
+            </>
+          ) : null}
+
+          {section === "emails" ? (
+            <>
+              <Card className="border-border bg-card text-card-foreground">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <CardTitle>Email Service</CardTitle>
+                      <CardDescription className="mt-2">SES quota usage and DB-backed hard limits.</CardDescription>
+                    </div>
+                    <Button type="button" variant="secondary" onClick={refetchEmailLimits}>Refresh</Button>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {emailLimitsLoading ? (
+                <div className="flex min-h-48 items-center justify-center p-6"><Spinner label="Loading email service" /></div>
+              ) : emailLimitsError ? (
+                <EmptyState title="Could not load email service" description={emailLimitsError} action={<Button type="button" onClick={refetchEmailLimits}>Try again</Button>} />
+              ) : emailLimits ? (
+                <>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <StatCard label="Month sent" value={formatCount(emailLimits.month.sent)} hint={`${emailMonthPercent}% of ${formatCount(emailLimits.settings.monthlyHardLimit)}`} />
+                    <StatCard label="Remaining" value={formatCount(emailLimits.month.remaining)} hint={`Resets ${formatAuditTimestamp(emailLimits.month.resetAt)}`} />
+                    <StatCard label="Today" value={formatCount(emailLimits.today.sent)} hint={`Day starts ${String(emailLimits.settings.dailyResetHourUtc).padStart(2, "0")}:00 UTC`} />
+                  </div>
+
+                  <Card className="border-border bg-card text-card-foreground">
+                    <CardHeader>
+                      <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                          <CardTitle>Monthly usage</CardTitle>
+                          <CardDescription className="mt-2">
+                            {formatCount(emailLimits.month.sent)} sent, {formatCount(emailLimits.month.remaining)} left.
+                          </CardDescription>
+                        </div>
+                        <Badge variant={emailLimits.month.blocked ? "destructive" : "secondary"}>{emailLimits.month.blocked ? "Blocked" : "Active"}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="h-3 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-full rounded-full ${emailLimits.month.blocked ? "bg-destructive" : "bg-primary"}`}
+                          style={{ width: `${emailMonthPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex flex-wrap justify-between gap-2 text-sm text-muted-foreground">
+                        <span>Started {formatAuditTimestamp(emailLimits.month.periodStart)}</span>
+                        <span>{emailMonthPercent}% used</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+                    <Card className="border-border bg-card text-card-foreground">
+                      <CardHeader>
+                        <CardTitle>Recent daily usage</CardTitle>
+                        <CardDescription className="mt-2">Global email sends tracked by the auth service.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {emailLimits.recentDays.length ? emailLimits.recentDays.map((day) => {
+                          const width = Math.max(4, Math.round((day.sent / maxRecentEmailSends) * 100));
+                          return (
+                            <div key={day.date} className="grid grid-cols-[6rem_minmax(0,1fr)_4rem] items-center gap-3 text-sm">
+                              <span className="text-muted-foreground">{formatDate(day.date)}</span>
+                              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                                <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
+                              </div>
+                              <span className="text-right tabular-nums">{formatCount(day.sent)}</span>
+                            </div>
+                          );
+                        }) : (
+                          <EmptyState title="No daily usage yet" description="Usage appears here after email sends are recorded." />
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-border bg-card text-card-foreground">
+                      <CardHeader>
+                        <CardTitle>Settings</CardTitle>
+                        <CardDescription className="mt-2">{canUpdateEmails ? "Changes are audited." : "Read-only for this account."}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {canUpdateEmails ? (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="monthlyHardLimit">Monthly hard limit</Label>
+                              <Input id="monthlyHardLimit" type="number" min={1} value={monthlyHardLimit} onChange={(event) => setMonthlyHardLimit(event.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="dailyRecipientLimit">Daily per recipient</Label>
+                              <Input id="dailyRecipientLimit" type="number" min={1} value={dailyRecipientLimit} onChange={(event) => setDailyRecipientLimit(event.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="dailyIpLimit">Daily per IP</Label>
+                              <Input id="dailyIpLimit" type="number" min={1} value={dailyIpLimit} onChange={(event) => setDailyIpLimit(event.target.value)} />
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="monthlyResetDay">Monthly reset day</Label>
+                                <Input id="monthlyResetDay" type="number" min={1} max={28} value={monthlyResetDay} onChange={(event) => setMonthlyResetDay(event.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="dailyResetHourUtc">Daily reset hour UTC</Label>
+                                <Input id="dailyResetHourUtc" type="number" min={0} max={23} value={dailyResetHourUtc} onChange={(event) => setDailyResetHourUtc(event.target.value)} />
+                              </div>
+                            </div>
+                            <Button type="button" className="w-full" disabled={emailLimitsSaving} onClick={() => void saveEmailLimits()}>
+                              {emailLimitsSaving ? "Saving..." : "Save email settings"}
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="grid gap-3 text-sm">
+                            <div className="flex justify-between gap-3"><span className="text-muted-foreground">Monthly hard limit</span><span className="font-medium tabular-nums">{formatCount(emailLimits.settings.monthlyHardLimit)}</span></div>
+                            <div className="flex justify-between gap-3"><span className="text-muted-foreground">Daily per recipient</span><span className="font-medium tabular-nums">{formatCount(emailLimits.settings.dailyRecipientLimit)}</span></div>
+                            <div className="flex justify-between gap-3"><span className="text-muted-foreground">Daily per IP</span><span className="font-medium tabular-nums">{formatCount(emailLimits.settings.dailyIpLimit)}</span></div>
+                            <div className="flex justify-between gap-3"><span className="text-muted-foreground">Monthly reset day</span><span className="font-medium tabular-nums">{emailLimits.settings.monthlyResetDay}</span></div>
+                            <div className="flex justify-between gap-3"><span className="text-muted-foreground">Daily reset hour</span><span className="font-medium tabular-nums">{String(emailLimits.settings.dailyResetHourUtc).padStart(2, "0")}:00 UTC</span></div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              ) : null}
             </>
           ) : null}
 

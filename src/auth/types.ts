@@ -67,6 +67,47 @@ export interface UpdateRoleRequest {
   permissions?: string[];
 }
 
+export interface EmailLimitSettingsResponse {
+  monthlyHardLimit: number;
+  dailyRecipientLimit: number;
+  dailyIpLimit: number;
+  monthlyResetDay: number;
+  dailyResetHourUtc: number;
+}
+
+export interface UpdateEmailLimitSettingsRequest {
+  monthlyHardLimit: number;
+  dailyRecipientLimit: number;
+  dailyIpLimit: number;
+  monthlyResetDay: number;
+  dailyResetHourUtc: number;
+}
+
+export interface EmailLimitPeriodResponse {
+  periodStart: string;
+  resetAt: string;
+  sent: number;
+  remaining: number;
+  blocked: boolean;
+}
+
+export interface EmailLimitTodayResponse {
+  date: string;
+  sent: number;
+}
+
+export interface EmailLimitDailyUsageResponse {
+  date: string;
+  sent: number;
+}
+
+export interface EmailLimitStatusResponse {
+  settings: EmailLimitSettingsResponse;
+  month: EmailLimitPeriodResponse;
+  today: EmailLimitTodayResponse;
+  recentDays: EmailLimitDailyUsageResponse[];
+}
+
 export interface OAuthLinkResponse {
   provider: string;
   providerUserId: string;
