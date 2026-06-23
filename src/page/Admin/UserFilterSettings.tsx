@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
-import { FiFilter, FiX } from "react-icons/fi";
 import {
   Badge,
   Button,
   Checkbox,
   Input,
   Label,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
   Select,
   SelectContent,
   SelectItem,
@@ -17,6 +13,7 @@ import {
   Separator,
 } from "@aottg2/ui";
 import type { AdminAccountFilters, AdminEmailVerifiedFilter, RoleResponse } from "../../auth/types";
+import { FilterSettingsPopover } from "./FilterSettingsPopover";
 import { countUserFilters, EMPTY_USER_FILTERS, normalizeUserFilters } from "./userFilters";
 
 type UserFilterSettingsProps = {
@@ -62,28 +59,19 @@ export function UserFilterSettings({ roles, value, onApply, onReset }: UserFilte
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button type="button" variant="secondary" className="gap-2">
-          <FiFilter className="h-4 w-4" aria-hidden="true" />
-          Filter settings
-          {activeCount ? <Badge variant="textured" className="ml-1 tabular-nums">{activeCount}</Badge> : null}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] border-border bg-card p-0 text-card-foreground shadow-xl">
-        <div className="space-y-4 p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">Advanced search</h3>
-              <p className="text-xs text-muted-foreground">Role filters match users with every selected role.</p>
-            </div>
-            {activeCount ? (
-              <Button type="button" variant="ghost" size="icon" onClick={reset} aria-label="Clear user filters">
-                <FiX className="h-4 w-4" />
-              </Button>
-            ) : null}
-          </div>
-
+    <FilterSettingsPopover
+      activeCount={activeCount}
+      description="Role filters match users with every selected role."
+      footer={(
+        <>
+          <Button type="button" variant="ghost" onClick={reset}>Reset</Button>
+          <Button type="button" onClick={apply}>Apply filters</Button>
+        </>
+      )}
+      onReset={reset}
+      open={open}
+      setOpen={setOpen}
+    >
           <div className="space-y-2">
             <Label htmlFor="admin-filter-display-name">Display name</Label>
             <Input
@@ -135,13 +123,6 @@ export function UserFilterSettings({ roles, value, onApply, onReset }: UserFilte
               }) : <p className="px-2 py-4 text-sm text-muted-foreground">Role catalog unavailable.</p>}
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 p-3">
-          <Button type="button" variant="ghost" onClick={reset}>Reset</Button>
-          <Button type="button" onClick={apply}>Apply filters</Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+    </FilterSettingsPopover>
   );
 }

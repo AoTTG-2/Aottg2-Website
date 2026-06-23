@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiFileText, FiGrid, FiHome, FiKey, FiMoreHorizontal, FiSettings, FiShield, FiUsers } from "react-icons/fi";
 import {
@@ -62,6 +62,7 @@ import { authApi } from "../../auth/api";
 import { ADMIN_ACCESS_PERMISSIONS } from "../../auth/adminPermissions";
 import { useAuth } from "../../auth/useAuth";
 import type { AdminAccountDetailResponse, AdminAccountFilters, AuditEventResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
+import { AuditFilterSettings } from "./AuditFilterSettings";
 import { UserFilterSettings } from "./UserFilterSettings";
 import { EMPTY_USER_FILTERS } from "./userFilters";
 
@@ -736,22 +737,30 @@ export default function Admin() {
     setAuditsPage(1);
   }
 
-  async function applyAuditAccountSearch() {
-    const query = auditUserSearch.trim();
+  function resetAuditFilters() {
+    clearAuditAccountFilter();
+    setAuditViewMode("readable");
+    setAuditsPageSize(50);
+  }
+
+  async function applyAuditAccountSearch(value: string) {
+    const query = value.trim();
     setAuditsPage(1);
     if (!query) {
       setAuditAccountFilter(null);
-      return;
+      setAuditUserSearch("");
+      return true;
     }
 
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query)) {
       setAuditAccountFilter({ accountId: query });
-      return;
+      setAuditUserSearch(query);
+      return true;
     }
 
     if (!canReadUsers) {
       toast.error("Could not filter user", { description: "User search requires users.read." });
-      return;
+      return false;
     }
 
     setAuditUserSearchLoading(true);
@@ -760,13 +769,15 @@ export default function Admin() {
       const user = ok ? data.accounts?.[0] : null;
       if (!user) {
         toast.error("No matching user");
-        return;
+        return false;
       }
 
       setAuditAccountFilter({ accountId: user.accountId, displayName: user.displayName, email: user.email });
       setAuditUserSearch(user.email || user.displayName || user.accountId);
+      return true;
     } catch (error) {
       toast.error("Could not filter user", { description: error instanceof Error ? error.message : undefined });
+      return false;
     } finally {
       setAuditUserSearchLoading(false);
     }
@@ -1101,16 +1112,18 @@ export default function Admin() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <FilterBar>
-                    <SearchInput value={search} onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)} onClear={() => setSearch("")} placeholder="FZF search users" className="min-w-72" />
-                    <UserFilterSettings roles={roles} value={userFilters} onApply={applyUserFilters} onReset={resetUserFilters} />
-                    <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}>
-                      <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {[20, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Button type="button" variant="secondary" onClick={refetchUsers}>Refresh</Button>
+                  <FilterBar className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                    <SearchInput value={search} onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)} onClear={() => setSearch("")} placeholder="FZF search users" className="max-w-none" />
+                    <div className="flex w-full flex-wrap items-center justify-end gap-3 md:w-auto md:pr-2">
+                      <UserFilterSettings roles={roles} value={userFilters} onApply={applyUserFilters} onReset={resetUserFilters} />
+                      <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}>
+                        <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {[20, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="secondary" onClick={refetchUsers}>Refresh</Button>
+                    </div>
                   </FilterBar>
                 </CardContent>
               </Card>
@@ -1249,49 +1262,22 @@ export default function Admin() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <FilterBar>
-                    <SearchInput value={auditEventType} onChange={(event: ChangeEvent<HTMLInputElement>) => setAuditEventType(event.target.value)} onClear={() => setAuditEventType("")} placeholder="Filter event type" className="min-w-72" />
-                    <div className="flex min-w-72 items-center gap-2">
-                      <SearchInput
-                        value={auditUserSearch}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) => setAuditUserSearch(event.target.value)}
-                        onClear={clearAuditAccountFilter}
-                        onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
-                          if (event.key === "Enter") {
-                            event.preventDefault();
-                            void applyAuditAccountSearch();
-                          }
-                        }}
-                        placeholder="Filter user email, name, or id"
-                        className="min-w-0 flex-1"
+                  <FilterBar className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                    <SearchInput value={auditEventType} onChange={(event: ChangeEvent<HTMLInputElement>) => setAuditEventType(event.target.value)} onClear={() => setAuditEventType("")} placeholder="Filter event type" className="max-w-none" />
+                    <div className="flex w-full flex-wrap items-center justify-end gap-3 md:w-auto md:pr-2">
+                      <AuditFilterSettings
+                        accountLabel={auditAccountFilter ? formatAuditAccount(auditAccountFilter, auditAccountFilter.accountId) : undefined}
+                        loading={auditUserSearchLoading}
+                        onApplyUserSearch={applyAuditAccountSearch}
+                        onPageSizeChange={(nextPageSize) => { setAuditsPageSize(nextPageSize); setAuditsPage(1); }}
+                        onReset={resetAuditFilters}
+                        onViewModeChange={setAuditViewMode}
+                        pageSize={auditsPageSize}
+                        userSearch={auditUserSearch}
+                        viewMode={auditViewMode}
                       />
-                      <Button type="button" variant="secondary" disabled={auditUserSearchLoading} onClick={() => void applyAuditAccountSearch()}>
-                        {auditUserSearchLoading ? "Finding" : "Apply"}
-                      </Button>
+                      <Button type="button" variant="secondary" onClick={refetchAudits}>Refresh</Button>
                     </div>
-                    {auditAccountFilter ? (
-                      <Badge variant="secondary" className="gap-2">
-                        User: {formatAuditAccount(auditAccountFilter, auditAccountFilter.accountId)}
-                        <button type="button" className="text-muted-foreground hover:text-foreground" onClick={clearAuditAccountFilter} aria-label="Clear user audit filter">×</button>
-                      </Badge>
-                    ) : null}
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="audit-view-mode" className="text-sm text-muted-foreground">View</Label>
-                      <Select value={auditViewMode} onValueChange={(value) => setAuditViewMode(value === "technical" ? "technical" : "readable")}>
-                        <SelectTrigger id="audit-view-mode" className="w-36"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="readable">Readable</SelectItem>
-                          <SelectItem value="technical">Technical</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Select value={String(auditsPageSize)} onValueChange={(value) => { setAuditsPageSize(Number(value)); setAuditsPage(1); }}>
-                      <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {[20, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Button type="button" variant="secondary" onClick={refetchAudits}>Refresh</Button>
                   </FilterBar>
                 </CardContent>
               </Card>
