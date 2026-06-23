@@ -143,6 +143,13 @@ export const authApi = {
   patreonStart: () =>
     request<{ authorizationUrl: string; state: string } & ErrorResponse>("/patreon/oauth/start"),
 
+  patreonCallback: (code: string, state: string) =>
+    request<{ linked?: boolean; status?: string } & ErrorResponse>(
+      `/patreon/oauth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
+      {},
+      false,
+    ),
+
   patreonUnlink: () =>
     request<ErrorResponse>("/patreon/link", { method: "DELETE" }),
 

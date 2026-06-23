@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../../auth/api";
 import { useAuth } from "../../auth/useAuth";
 import {
@@ -147,6 +147,7 @@ function AccountSidebar({ activeSection, onSelect, onLogout }: { activeSection: 
 
 export default function Accounts() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useAccountsTheme();
   const { profile, isAuthenticated, isLoading, logout, refreshProfile } = useAuth();
   const [newName, setNewName] = useState("");
@@ -172,6 +173,17 @@ export default function Accounts() {
       setNewName(profile.displayName);
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!profile || location.hash !== "#connections") {
+      return;
+    }
+
+    window.setTimeout(() => {
+      document.getElementById("connections")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setActiveSection("connections");
+    }, 0);
+  }, [location.hash, profile]);
 
   useEffect(() => {
     function updateActiveSection() {

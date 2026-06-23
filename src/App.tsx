@@ -28,6 +28,7 @@ const ResendVerification = lazy(() => import("./page/ResendVerification"));
 const ForgotPassword = lazy(() => import("./page/ForgotPassword"));
 const ResetPassword = lazy(() => import("./page/ResetPassword"));
 const OAuthCallback = lazy(() => import("./page/OAuthCallback"));
+const PatreonCallback = lazy(() => import("./page/PatreonCallback"));
 const Accounts = lazy(() => import("./page/Accounts"));
 const Admin = lazy(() => import("./page/Admin"));
 
@@ -41,6 +42,7 @@ const AUTH_ROUTE_PREFIXES = [
   "/forgot-password",
   "/reset-password",
   "/oauth-callback",
+  "/patreon-callback",
   "/accounts",
   "/account",
 ];
@@ -188,6 +190,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/oauth-callback" element={<OAuthCallback />} />
+              <Route path="/patreon-callback" element={<PatreonCallback />} />
               <Route path="/accounts" element={<Accounts />} />
               <Route path="/account" element={<Navigate to="/accounts" replace />} />
             </Route>
