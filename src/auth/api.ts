@@ -225,6 +225,9 @@ export const authApi = {
   refreshAdminPatreon: (id: string) =>
     request<ProfileResponse["patreon"] & ErrorResponse>(`/admin/accounts/${id}/patreon/refresh`, { method: "POST" }),
 
+  clearAdminPatreonOverride: (id: string) =>
+    request<ProfileResponse["patreon"] & ErrorResponse>(`/admin/accounts/${id}/patreon/clear-override`, { method: "POST" }),
+
   listPermissions: () =>
     request<PermissionResponse[] & ErrorResponse>("/admin/permissions"),
 

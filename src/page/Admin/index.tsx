@@ -613,6 +613,7 @@ export default function Admin() {
   const [patreonStatusDraft, setPatreonStatusDraft] = useState("");
   const [patreonAmountDraft, setPatreonAmountDraft] = useState("");
   const [patreonCustomTier, setPatreonCustomTier] = useState("");
+  const [clearPatreonOverrideUser, setClearPatreonOverrideUser] = useState<ProfileResponse | AdminAccountDetailResponse | null>(null);
   const [deleteUser, setDeleteUser] = useState<ProfileResponse | null>(null);
   const [roleFormMode, setRoleFormMode] = useState<"create" | "edit" | null>(null);
   const [editingRole, setEditingRole] = useState<RoleResponse | null>(null);
@@ -1213,6 +1214,30 @@ export default function Admin() {
       if (canReadAudits) refetchAudits();
     } catch {
       toast.error("Patreon refresh failed", { description: "Network error." });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function clearPatreonOverride() {
+    if (!clearPatreonOverrideUser) return;
+
+    setActionLoading(true);
+    try {
+      const { ok, data } = await authApi.clearAdminPatreonOverride(clearPatreonOverrideUser.accountId);
+      if (!ok) {
+        toast.error("Clear override failed", { description: data.error });
+        return;
+      }
+
+      toast.success("Patreon override cleared");
+      if (detail?.accountId === clearPatreonOverrideUser.accountId) setDetail({ ...detail, patreon: data });
+      if (patreonUser?.accountId === clearPatreonOverrideUser.accountId) setPatreonUser(null);
+      setClearPatreonOverrideUser(null);
+      refetchUsers();
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Clear override failed", { description: "Network error." });
     } finally {
       setActionLoading(false);
     }
@@ -1839,6 +1864,7 @@ export default function Admin() {
                     <div className="flex flex-wrap gap-2 pt-1">
                       <Button type="button" variant="secondary" onClick={() => openPatreon(detail)}>Edit tiers</Button>
                       <Button type="button" variant="secondary" disabled={actionLoading || !detail.patreon?.linked} onClick={() => void refreshUserPatreon(detail)}>Refresh tiers</Button>
+                      {detail.patreon?.manualOverride ? <Button type="button" variant="destructive" disabled={actionLoading} onClick={() => setClearPatreonOverrideUser(detail)}>Clear override</Button> : null}
                     </div>
                   ) : null}
                 </CardContent>
@@ -1944,6 +1970,7 @@ export default function Admin() {
           </div>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setPatreonUser(null)}>Cancel</Button>
+            {patreonUser?.patreon?.manualOverride ? <Button type="button" variant="destructive" disabled={actionLoading} onClick={() => setClearPatreonOverrideUser(patreonUser)}>Clear override</Button> : null}
             <Button type="button" disabled={actionLoading} onClick={() => void savePatreonTiers()}>Save manual override</Button>
           </DialogFooter>
         </DialogContent>
@@ -1992,6 +2019,8 @@ export default function Admin() {
       <ConfirmDialog open={deleteRoleTarget !== null} onOpenChange={(open) => !open && setDeleteRoleTarget(null)} title="Delete role?" description={`Delete ${deleteRoleTarget?.displayName ?? "this role"}. Assigned or protected roles may be blocked by the API.`} confirmLabel="Delete" destructive onConfirm={() => void confirmDeleteRole()} />
 
       <ConfirmDialog open={deleteUser !== null} onOpenChange={(open) => !open && setDeleteUser(null)} title="Delete user?" description={`This permanently deletes ${deleteUser?.email ?? "this user"}.`} confirmLabel="Delete" destructive onConfirm={() => void confirmDelete()} />
+
+      <ConfirmDialog open={clearPatreonOverrideUser !== null} onOpenChange={(open) => !open && setClearPatreonOverrideUser(null)} title="Clear Patreon override?" description={`Remove DB-only Patreon testing state for ${clearPatreonOverrideUser?.email ?? "this user"}. Real Patreon data will be restored only if provider tokens still prove campaign membership.`} confirmLabel="Clear override" destructive onConfirm={() => void clearPatreonOverride()} />
     </main>
   );
 }
