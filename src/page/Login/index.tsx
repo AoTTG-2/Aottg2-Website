@@ -1,5 +1,7 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { authApi } from "../../auth/api";
+import { buildWorkshopCallbackUrl, getLoginNext } from "../../auth/loginRedirect";
 import { useAuth } from "../../auth/useAuth";
 import { Button, Input, Label } from "@aottg2/ui";
 import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
@@ -12,13 +14,32 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState(searchParams.get("error") ?? "");
+  const loginNext = useMemo(() => getLoginNext(searchParams.get("next")), [searchParams]);
+
+  const finishLogin = useCallback(async (replace = false) => {
+    if (loginNext?.kind === "workshop") {
+      setIsRedirecting(true);
+      const { ok, data } = await authApi.createSessionCode();
+      if (!ok || !data.code) {
+        setIsRedirecting(false);
+        setError(data.error ?? "Could not open Workshop. Please try again.");
+        return;
+      }
+
+      window.location.href = buildWorkshopCallbackUrl(loginNext, data.code);
+      return;
+    }
+
+    navigate(loginNext?.path ?? "/accounts", { replace });
+  }, [loginNext, navigate]);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate("/accounts", { replace: true });
+    if (!isLoading && isAuthenticated && !isRedirecting) {
+      void finishLogin(true);
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [finishLogin, isAuthenticated, isLoading, isRedirecting]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,7 +49,7 @@ export default function Login() {
     try {
       const result = await login(email, password);
       if (result.ok) {
-        navigate("/accounts");
+        await finishLogin();
       } else {
         setError(result.error ?? "Login failed. Please try again.");
       }
@@ -41,7 +62,7 @@ export default function Login() {
 
   return (
     <AuthShell title="Sign in" subtitle="Sign in to your AOTTG2 account.">
-      <OAuthButtons disabled={isSubmitting || isLoading} onError={setError} />
+      <OAuthButtons disabled={isSubmitting || isLoading || isRedirecting} onError={setError} returnTo={loginNext} />
       <OAuthDivider />
 
       <form className="space-y-5" onSubmit={handleSubmit}>
@@ -77,9 +98,9 @@ export default function Login() {
           type="submit"
           size="lg"
           className="w-full"
-          disabled={isSubmitting || isLoading}
+          disabled={isSubmitting || isLoading || isRedirecting}
         >
-          {isSubmitting ? "Signing in…" : "Sign in"}
+          {isRedirecting ? "Opening Workshop…" : isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
 

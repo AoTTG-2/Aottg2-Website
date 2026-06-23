@@ -173,6 +173,10 @@ export interface OAuthStartResponse {
   state: string;
 }
 
+export interface SessionCodeResponse {
+  code: string;
+}
+
 export interface ErrorResponse {
   error?: string;
 }

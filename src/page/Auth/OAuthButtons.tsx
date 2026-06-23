@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { authApi } from "../../auth/api";
+import { rememberLoginNext } from "../../auth/loginRedirect";
+import type { LoginNext } from "../../auth/loginRedirect";
 import type { OAuthProvider } from "../../auth/types";
 import { Button, Separator } from "@aottg2/ui";
 
@@ -36,9 +38,10 @@ function GoogleIcon() {
 interface OAuthButtonsProps {
   disabled?: boolean;
   onError: (message: string) => void;
+  returnTo?: LoginNext | null;
 }
 
-export function OAuthButtons({ disabled = false, onError }: OAuthButtonsProps) {
+export function OAuthButtons({ disabled = false, onError, returnTo = null }: OAuthButtonsProps) {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
 
   async function handleOAuth(provider: OAuthProvider) {
@@ -46,6 +49,7 @@ export function OAuthButtons({ disabled = false, onError }: OAuthButtonsProps) {
     setLoadingProvider(provider);
 
     try {
+      rememberLoginNext(returnTo);
       const { ok, data } = await authApi.oauthStart(provider);
       if (ok && data.authorizationUrl) {
         window.location.href = data.authorizationUrl;

@@ -16,6 +16,7 @@ import type {
   ProfileResponse,
   RegisterResponse,
   RoleResponse,
+  SessionCodeResponse,
   UpdateEmailLimitSettingsRequest,
   UpdateRoleRequest,
 } from "./types";
@@ -129,6 +130,9 @@ export const authApi = {
 
   oauthSession: (code: string) =>
     request<AuthResponse & ErrorResponse>(`/auth/oauth/session?code=${encodeURIComponent(code)}`, {}, false),
+
+  createSessionCode: () =>
+    request<SessionCodeResponse & ErrorResponse>("/auth/session-code", { method: "POST" }),
 
   getProfile: () =>
     request<ProfileResponse & ErrorResponse>("/me"),

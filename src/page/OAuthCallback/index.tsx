@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../../auth/api";
+import { buildWorkshopCallbackUrl, consumeLoginNext } from "../../auth/loginRedirect";
 import { useAuth } from "../../auth/useAuth";
 import { Button, Spinner } from "@aottg2/ui";
 import { AuthShell } from "../Auth/AuthShell";
@@ -26,7 +27,7 @@ export default function OAuthCallback() {
 
     let active = true;
     authApi.oauthSession(code)
-      .then(({ ok, data }) => {
+      .then(async ({ ok, data }) => {
         if (!active) {
           return;
         }
@@ -37,7 +38,21 @@ export default function OAuthCallback() {
         }
 
         acceptSession(data);
-        navigate("/accounts", { replace: true });
+        const loginNext = consumeLoginNext();
+        if (loginNext?.kind === "workshop") {
+          const sessionCode = await authApi.createSessionCode();
+          if (!active) return;
+
+          if (!sessionCode.ok || !sessionCode.data.code) {
+            setError(sessionCode.data.error ?? "Could not open Workshop. Please try again.");
+            return;
+          }
+
+          window.location.href = buildWorkshopCallbackUrl(loginNext, sessionCode.data.code);
+          return;
+        }
+
+        navigate(loginNext?.path ?? "/accounts", { replace: true });
       })
       .catch(() => {
         if (active) {
