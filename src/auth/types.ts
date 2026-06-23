@@ -33,8 +33,28 @@ export interface ProfileResponse {
   oAuthLinks?: OAuthLinkResponse[];
   description?: string | null;
   avatarKey?: string | null;
+  bannerKey?: string | null;
   socials?: Record<string, string>;
   createdAt?: string;
+}
+
+export interface ProfilePreset {
+  key: string;
+  label: string;
+  imageUrl: string;
+}
+
+export interface ProfilePresetCatalog {
+  avatars: ProfilePreset[];
+  banners: ProfilePreset[];
+}
+
+export interface UpdateProfileRequest {
+  displayName?: string | null;
+  description?: string | null;
+  avatarKey?: string | null;
+  bannerKey?: string | null;
+  socials?: Record<string, string> | null;
 }
 
 export type AdminEmailVerifiedFilter = "any" | "verified" | "unverified";

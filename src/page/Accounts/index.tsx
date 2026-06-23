@@ -239,7 +239,13 @@ export default function Accounts() {
 
     setNameLoading(true);
     try {
-      const { ok, data } = await authApi.updateProfile(trimmed);
+      const { ok, data } = await authApi.updateProfile({
+        displayName: trimmed,
+        description: profile?.description ?? null,
+        avatarKey: profile?.avatarKey ?? null,
+        bannerKey: profile?.bannerKey ?? null,
+        socials: profile?.socials ?? {},
+      });
       if (ok) {
         setNameMessage("Display name updated.");
         setNameOk(true);

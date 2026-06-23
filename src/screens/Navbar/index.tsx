@@ -96,6 +96,12 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
     window.scrollTo(0, 0);
   }
 
+  function goProfile() {
+    closeFocusedMenu();
+    navigate(isAuthenticated ? "/profile" : "/login");
+    window.scrollTo(0, 0);
+  }
+
   function goAdmin() {
     closeFocusedMenu();
     navigate("/admin");
@@ -166,6 +172,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
                 <div className="invisible fixed right-4 top-9 z-[1100] w-56 pt-1 opacity-0 transition-[opacity,visibility] duration-150 ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 lg:right-8">
                   <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content min-w-32 overflow-hidden rounded-none bg-popover p-1 text-popover-foreground shadow-md", theme)}>
                     <div className="aottg2-emboss-bg aottg2-cta-primary -mx-1 -mt-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wider text-primary-foreground">Account</div>
+                    {isAuthenticated && <AccountMenuItem onClick={goProfile}><Icon><UserIcon /></Icon>Profile</AccountMenuItem>}
                     <AccountMenuItem onClick={goSettings}><Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>{isAuthenticated ? "Settings" : "Login"}</AccountMenuItem>
                     {canAccessAdmin && <AccountMenuItem onClick={goAdmin}><Icon><SettingsIcon /></Icon>Admin Panel</AccountMenuItem>}
                     {isAuthenticated && <AccountMenuItem onClick={handleLogout}><Icon><LogoutIcon /></Icon>Logout</AccountMenuItem>}
@@ -192,6 +199,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
               {item.name}
             </button>
           ))}
+          {SHOW_LOGIN_NAV && isAuthenticated && <button onClick={goProfile} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">Profile</button>}
           {SHOW_LOGIN_NAV && <button onClick={goSettings} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Settings</button>}
           {canAccessAdmin && <button onClick={goAdmin} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Admin Panel</button>}
           {isAuthenticated && <button onClick={handleLogout} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">↪ Logout</button>}

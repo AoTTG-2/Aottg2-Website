@@ -26,6 +26,7 @@ The website never stores provider secrets. All secrets stay in the accounts serv
 | `/reset-password?token=...` | Password reset link target. | `POST /v1/auth/reset-password` |
 | `/oauth-callback?code=...` | Browser OAuth completion. | `GET /v1/auth/oauth/session?code=...` |
 | `/accounts` | Account/profile management. | `GET/PATCH/DELETE /v1/me`, `GET /v1/patreon/oauth/start`, `DELETE /v1/patreon/link`, `POST /v1/auth/logout` |
+| `/profile` | Logged-in profile editor for bio, socials, preset avatar, and preset banner. | `GET /v1/profile-presets`, `PATCH /v1/me` |
 | `/admin` | Permission-gated admin/moderator panel. Requires an admin-module permission such as `users.read`, `roles.read`, `permissions.read`, or `audits.read`. | `GET/PATCH/DELETE /v1/admin/*` according to granted permissions |
 | `/account` | Compatibility redirect. | Redirects to `/accounts` |
 
@@ -164,6 +165,8 @@ Important security behavior: browser URLs receive only a short-lived one-time `c
 - Patreon unlink through `DELETE /v1/patreon/link`
 - account deletion through `DELETE /v1/me`
 - logout through `POST /v1/auth/logout`
+
+`/profile` is protected by the same frontend auth state. It edits public profile fields with backend-approved preset keys only; it does not upload images.
 
 ## Patreon Note
 

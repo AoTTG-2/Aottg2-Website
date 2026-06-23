@@ -50,9 +50,9 @@ export function AuthNavbar() {
   const nextTheme = theme === "dark" ? "light" : "dark";
   const isAdmin = profile?.roles.includes("admin") ?? false;
   const canAccessAdmin = isAdmin || ADMIN_ACCESS_PERMISSIONS.some((permission) => profile?.permissions?.includes(permission));
-  const accountsActive = location.pathname === "/accounts" || location.pathname === "/login" || location.pathname === "/admin";
+  const accountsActive = location.pathname === "/accounts" || location.pathname === "/profile" || location.pathname === "/login" || location.pathname === "/admin";
   const accountLabel = isAuthenticated && profile?.displayName ? profile.displayName : "ACCOUNTS";
-  const logoText = location.pathname.startsWith("/admin") ? "ADMIN" : location.pathname.startsWith("/account") ? "SETTINGS" : "LOGIN";
+  const logoText = location.pathname.startsWith("/admin") ? "ADMIN" : location.pathname.startsWith("/profile") ? "PROFILE" : location.pathname.startsWith("/account") || location.pathname.startsWith("/accounts") ? "SETTINGS" : "LOGIN";
 
   function goHome() {
     navigate("/");
@@ -66,6 +66,11 @@ export function AuthNavbar() {
   function goSettings() {
     closeFocusedMenu();
     navigate(isAuthenticated ? "/accounts" : "/login");
+  }
+
+  function goProfile() {
+    closeFocusedMenu();
+    navigate(isAuthenticated ? "/profile" : "/login");
   }
 
   function goAdmin() {
@@ -110,6 +115,12 @@ export function AuthNavbar() {
             <div className="invisible fixed right-4 top-10 z-[1100] w-56 pt-1 opacity-0 transition-[opacity,visibility] duration-150 ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 lg:right-8 lg:top-11">
               <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content min-w-32 overflow-hidden rounded-none bg-popover p-1 text-popover-foreground shadow-md", theme)}>
                 <div className="aottg2-emboss-bg aottg2-cta-primary -mx-1 -mt-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wider text-primary-foreground">Account</div>
+                {isAuthenticated && (
+                  <MenuItem onClick={goProfile}>
+                    <Icon><UserIcon /></Icon>
+                    Profile
+                  </MenuItem>
+                )}
                 <MenuItem onClick={goSettings}>
                   <Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>
                   {isAuthenticated ? "Settings" : "Login"}

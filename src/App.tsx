@@ -31,6 +31,7 @@ const ResetPassword = lazy(() => import("./page/ResetPassword"));
 const OAuthCallback = lazy(() => import("./page/OAuthCallback"));
 const PatreonCallback = lazy(() => import("./page/PatreonCallback"));
 const Accounts = lazy(() => import("./page/Accounts"));
+const Profile = lazy(() => import("./page/Profile"));
 const Admin = lazy(() => import("./page/Admin"));
 
 type SectionRefs = Record<string, RefObject<HTMLDivElement>>;
@@ -47,6 +48,7 @@ const AUTH_ROUTE_PREFIXES = [
   "/patreon-callback",
   "/accounts",
   "/account",
+  "/profile",
 ];
 
 function isAuthRoute(pathname: string) {
@@ -196,6 +198,7 @@ function App() {
               <Route path="/patreon-callback" element={<PatreonCallback />} />
               <Route path="/accounts" element={<Accounts />} />
               <Route path="/account" element={<Navigate to="/accounts" replace />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<Admin />} />

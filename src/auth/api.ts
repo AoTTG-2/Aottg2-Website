@@ -15,15 +15,22 @@ import type {
   PatreonTierLabelsResponse,
   PatreonTierResponse,
   PermissionResponse,
+  ProfilePresetCatalog,
   ProfileResponse,
   RegisterResponse,
   RoleResponse,
   SessionCodeResponse,
   UpdateEmailLimitSettingsRequest,
+  UpdateProfileRequest,
   UpdateRoleRequest,
 } from "./types";
 
-const API_BASE_URL = `${(import.meta.env.VITE_AUTH_API_BASE_URL ?? "").replace(/\/$/, "")}/v1`;
+const AUTH_API_ORIGIN = (import.meta.env.VITE_AUTH_API_BASE_URL ?? "").replace(/\/$/, "");
+const API_BASE_URL = `${AUTH_API_ORIGIN}/v1`;
+
+export function authAssetUrl(path: string) {
+  return path.startsWith("http") ? path : `${AUTH_API_ORIGIN}${path}`;
+}
 
 async function parseJson<T>(response: Response): Promise<T> {
   try {
@@ -145,10 +152,13 @@ export const authApi = {
   getProfile: () =>
     request<ProfileResponse & ErrorResponse>("/me"),
 
-  updateProfile: (displayName: string) =>
+  getProfilePresets: () =>
+    request<ProfilePresetCatalog & ErrorResponse>("/profile-presets"),
+
+  updateProfile: (body: UpdateProfileRequest) =>
     request<ProfileResponse & ErrorResponse>("/me", {
       method: "PATCH",
-      body: JSON.stringify({ displayName }),
+      body: JSON.stringify(body),
     }),
 
   setPassword: (newPassword: string) =>
