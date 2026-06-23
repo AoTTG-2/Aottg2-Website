@@ -233,7 +233,7 @@ export default function Profile() {
           </div>
           <CardHeader className="pt-32 md:min-h-52 md:pt-36">
             <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(12rem,18rem)] md:items-start">
-              <div className="min-w-0 space-y-3">
+              <div className="min-w-0 space-y-3 pt-8">
                 <CardTitle>{profile.displayName}</CardTitle>
                 {bio.trim() ? (
                   <CardDescription className="max-w-3xl whitespace-pre-wrap text-sm leading-relaxed">
@@ -242,7 +242,7 @@ export default function Profile() {
                 ) : null}
               </div>
               {previewSocialLinks.length ? (
-                <div className="flex min-w-0 flex-col gap-2 md:items-end">
+                <div className="flex min-w-0 flex-col items-start gap-2 md:justify-self-end">
                   {previewSocialLinks.map((url, index) => {
                     const href = safeSocialUrl(url);
                     const label = socialLabel(url);
