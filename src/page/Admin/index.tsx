@@ -122,6 +122,11 @@ function formatMoneyCents(value?: number | null) {
   return value == null ? "—" : `$${(value / 100).toFixed(2)}`;
 }
 
+function patreonStatusText(patreon?: ProfileResponse["patreon"]) {
+  if (!patreon?.linked) return "Unlinked";
+  return patreon.manualOverride ? "Manual override" : patreon.patronStatus ?? "Linked";
+}
+
 function usagePercent(sent: number, limit: number) {
   if (limit <= 0) return 0;
   return Math.min(100, Math.round((sent / limit) * 100));
@@ -1277,7 +1282,7 @@ export default function Admin() {
     {
       key: "patreon",
       header: "Patreon",
-      cell: (user: ProfileResponse) => <StatusBadge status={user.patreon?.linked ? "active" : "draft"}>{user.patreon?.linked ? "Linked" : "Unlinked"}</StatusBadge>,
+      cell: (user: ProfileResponse) => <StatusBadge status={user.patreon?.linked ? "active" : "draft"}>{patreonStatusText(user.patreon)}</StatusBadge>,
     },
     { key: "created", header: "Created", cell: (user: ProfileResponse) => formatDate(user.createdAt) },
     {
@@ -1822,7 +1827,8 @@ export default function Admin() {
                   <div><b>IP:</b> {detail.creationIpAddress ?? "—"}</div>
                   <div className="flex flex-wrap items-center gap-2">
                     <b>Patreon:</b>
-                    <StatusBadge status={detail.patreon?.linked ? "active" : "draft"}>{detail.patreon?.linked ? detail.patreon.patronStatus ?? "Linked" : "Unlinked"}</StatusBadge>
+                    <StatusBadge status={detail.patreon?.linked ? "active" : "draft"}>{patreonStatusText(detail.patreon)}</StatusBadge>
+                    {detail.patreon?.manualOverride ? <Badge variant="secondary">DB-only testing override</Badge> : null}
                   </div>
                   {detail.patreon?.tierIds.length ? (
                     <div className="flex flex-wrap gap-1">{detail.patreon.tierIds.map((tierId) => <Badge key={tierId} variant="secondary">{tierId}</Badge>)}</div>
@@ -1893,9 +1899,12 @@ export default function Admin() {
         <DialogContent className={ADMIN_DIALOG_SCROLL_CLASS}>
           <DialogHeader>
             <DialogTitle>Manage Patreon</DialogTitle>
-            <DialogDescription>{patreonUser?.email}</DialogDescription>
+            <DialogDescription>{patreonUser?.email} - Saving here creates a DB-only manual override for testing.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {patreonUser?.patreon?.manualOverride ? (
+              <Badge variant="secondary">Current Patreon state is manually overridden</Badge>
+            ) : null}
             <div className="space-y-2">
               <Label>Tiers</Label>
               <PillMultiSelect
@@ -1935,7 +1944,7 @@ export default function Admin() {
           </div>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setPatreonUser(null)}>Cancel</Button>
-            <Button type="button" disabled={actionLoading} onClick={() => void savePatreonTiers()}>Save Patreon</Button>
+            <Button type="button" disabled={actionLoading} onClick={() => void savePatreonTiers()}>Save manual override</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -5,6 +5,7 @@ export interface PatreonStatus {
   patronStatus: string | null;
   tierIds: string[];
   entitledAmountCents: number | null;
+  manualOverride: boolean;
   lastSyncedAt: string | null;
 }
 
