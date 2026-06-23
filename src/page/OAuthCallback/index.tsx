@@ -10,9 +10,24 @@ export default function OAuthCallback() {
   const navigate = useNavigate();
   const { acceptSession } = useAuth();
   const [error, setError] = useState("");
+  const [linkedProvider, setLinkedProvider] = useState("");
+  const [isLinkFlow, setIsLinkFlow] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const flow = params.get("flow");
+    if (flow === "link") {
+      setIsLinkFlow(true);
+      const provider = params.get("provider") ?? "Provider";
+      const errorMessage = params.get("error");
+      if (errorMessage) {
+        setError(errorMessage);
+      } else {
+        setLinkedProvider(provider);
+      }
+      return;
+    }
+
     const errorMessage = params.get("error");
     if (errorMessage) {
       setError(errorMessage);
@@ -65,11 +80,23 @@ export default function OAuthCallback() {
     };
   }, [acceptSession, navigate]);
 
+  if (linkedProvider) {
+    return (
+      <AuthShell title="Connection updated" subtitle={`${linkedProvider[0]?.toUpperCase() ?? ""}${linkedProvider.slice(1)} is connected to your account.`}>
+        <Button asChild size="lg" className="mt-8 w-full">
+          <Link to="/accounts#connections">Back to connections</Link>
+        </Button>
+      </AuthShell>
+    );
+  }
+
   if (error) {
     return (
-      <AuthShell title="Sign-in failed" subtitle={error}>
+      <AuthShell title={isLinkFlow ? "Connection failed" : "Sign-in failed"} subtitle={error}>
         <Button asChild size="lg" className="mt-8 w-full">
-          <Link to="/login">Back to sign in</Link>
+          <Link to={isLinkFlow ? "/accounts#connections" : "/login"}>
+            {isLinkFlow ? "Back to connections" : "Back to sign in"}
+          </Link>
         </Button>
       </AuthShell>
     );

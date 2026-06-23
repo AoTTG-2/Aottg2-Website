@@ -130,6 +130,12 @@ export const authApi = {
   oauthStart: (provider: OAuthProvider) =>
     request<OAuthStartResponse & ErrorResponse>(`/auth/oauth/${provider}/start`),
 
+  oauthLinkStart: (provider: OAuthProvider) =>
+    request<OAuthStartResponse & ErrorResponse>(`/auth/oauth/${provider}/link/start`, { method: "POST" }),
+
+  oauthUnlink: (provider: OAuthProvider) =>
+    request<ProfileResponse & ErrorResponse>(`/auth/oauth/${provider}/link`, { method: "DELETE" }),
+
   oauthSession: (code: string) =>
     request<AuthResponse & ErrorResponse>(`/auth/oauth/session?code=${encodeURIComponent(code)}`, {}, false),
 
@@ -143,6 +149,12 @@ export const authApi = {
     request<ProfileResponse & ErrorResponse>("/me", {
       method: "PATCH",
       body: JSON.stringify({ displayName }),
+    }),
+
+  setPassword: (newPassword: string) =>
+    request<ProfileResponse & ErrorResponse>("/me/password", {
+      method: "POST",
+      body: JSON.stringify({ newPassword }),
     }),
 
   deleteAccount: () =>

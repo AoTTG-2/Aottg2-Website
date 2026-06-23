@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../../auth/api";
+import type { OAuthProvider } from "../../auth/types";
 import { useAuth } from "../../auth/useAuth";
 import {
   Button,
@@ -101,6 +102,10 @@ function ConnectionStatus({ label, connected, detail, action }: { label: string;
   );
 }
 
+function oauthLinkDetail(link?: { providerEmail?: string | null; providerUserId: string }) {
+  return link?.providerEmail?.trim() || link?.providerUserId;
+}
+
 type AccountSectionId = "profile" | "display-name" | "email" | "connections" | "delete-account";
 
 function SectionIcon({ type }: { type: AccountSectionId }) {
@@ -154,8 +159,16 @@ export default function Accounts() {
   const [nameLoading, setNameLoading] = useState(false);
   const [nameMessage, setNameMessage] = useState("");
   const [nameOk, setNameOk] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null);
+  const [oauthError, setOauthError] = useState("");
   const [patreonLoading, setPatreonLoading] = useState(false);
   const [patreonError, setPatreonError] = useState("");
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordOk, setPasswordOk] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -259,6 +272,75 @@ export default function Accounts() {
     }
   }
 
+  async function handleOAuthLink(provider: OAuthProvider) {
+    setOauthError("");
+    setOauthLoading(provider);
+    try {
+      const { ok, data } = await authApi.oauthLinkStart(provider);
+      if (ok && data.authorizationUrl) {
+        window.location.href = data.authorizationUrl;
+        return;
+      }
+
+      setOauthError(data.error ?? `Failed to start ${provider} link.`);
+    } catch {
+      setOauthError("Network error. Please try again.");
+    } finally {
+      setOauthLoading(null);
+    }
+  }
+
+  async function handleOAuthUnlink(provider: OAuthProvider) {
+    setOauthError("");
+    setOauthLoading(provider);
+    try {
+      const { ok, data } = await authApi.oauthUnlink(provider);
+      if (ok) {
+        await refreshProfile();
+      } else {
+        setOauthError(data.error ?? `Failed to unlink ${provider}.`);
+      }
+    } catch {
+      setOauthError("Network error. Please try again.");
+    } finally {
+      setOauthLoading(null);
+    }
+  }
+
+  async function handleSetPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordOk("");
+
+    if (password.length < 8) {
+      setPasswordError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const { ok, data } = await authApi.setPassword(password);
+      if (ok) {
+        setPassword("");
+        setConfirmPassword("");
+        setPasswordOk("Password login is ready.");
+        await refreshProfile();
+        window.setTimeout(() => setPasswordOpen(false), 700);
+      } else {
+        setPasswordError(data.error ?? "Failed to set password.");
+      }
+    } catch {
+      setPasswordError("Network error. Please try again.");
+    } finally {
+      setPasswordLoading(false);
+    }
+  }
+
   async function handlePatreonUnlink() {
     setPatreonError("");
     setPatreonLoading(true);
@@ -315,8 +397,12 @@ export default function Accounts() {
   }
 
   const patreon = profile.patreon;
-  const discord = profile.socials?.discord;
-  const google = profile.socials?.google;
+  const oauthLinks = profile.oAuthLinks ?? (profile as unknown as { oauthLinks?: typeof profile.oAuthLinks }).oauthLinks ?? [];
+  const localLink = oauthLinks.find((link) => link.provider === "local");
+  const discord = oauthLinks.find((link) => link.provider === "discord");
+  const google = oauthLinks.find((link) => link.provider === "google");
+  const hasPasswordLogin = profile.hasPassword || Boolean(localLink);
+  const canSetPassword = !hasPasswordLogin && profile.emailVerified && !profile.email.toLowerCase().endsWith("@oauth.local");
   const dialogThemeClass = cn("aottg2-theme aottg2-palette-website", theme);
 
   return (
@@ -349,11 +435,62 @@ export default function Accounts() {
             <div className={cn("mt-2 font-primary text-xl uppercase", profile.emailVerified ? "text-primary" : "text-destructive")}>{profile.emailVerified ? "Verified" : "Not verified"}</div>
             {!profile.emailVerified && <p className="mt-2 text-sm text-muted-foreground">Check your inbox or request a new verification email from the login flow.</p>}
           </div>
+          <div className="rounded-none border border-border bg-background/60 p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Password login</div>
+            <div className={cn("mt-2 font-primary text-xl uppercase", hasPasswordLogin ? "text-primary" : "text-muted-foreground")}>{hasPasswordLogin ? "Ready" : "Not set"}</div>
+            {canSetPassword ? (
+              <Dialog open={passwordOpen} onOpenChange={(open) => { setPasswordOpen(open); if (!open) { setPassword(""); setConfirmPassword(""); setPasswordError(""); setPasswordOk(""); } }}>
+                <Button type="button" className="mt-4" onClick={() => setPasswordOpen(true)}>Set password</Button>
+                <DialogContent className={dialogThemeClass}>
+                  <DialogHeader>
+                    <DialogTitle>Set password</DialogTitle>
+                    <DialogDescription>Add email and password as a login method for this account.</DialogDescription>
+                  </DialogHeader>
+                  <form className="space-y-4" onSubmit={handleSetPassword}>
+                    <div className="space-y-2">
+                      <Label htmlFor="set-password">New password</Label>
+                      <Input id="set-password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-set-password">Confirm password</Label>
+                      <Input id="confirm-set-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} />
+                    </div>
+                    {passwordError && <ErrorMessage>{passwordError}</ErrorMessage>}
+                    {passwordOk && <SuccessMessage>{passwordOk}</SuccessMessage>}
+                    <DialogFooter>
+                      <Button type="button" variant="secondary" onClick={() => setPasswordOpen(false)} disabled={passwordLoading}>Cancel</Button>
+                      <Button type="submit" disabled={passwordLoading}>{passwordLoading ? "Saving…" : "Set password"}</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            ) : !hasPasswordLogin ? (
+              <p className="mt-2 text-sm text-muted-foreground">Use a verified provider login for this account.</p>
+            ) : null}
+          </div>
         </AccountCard>
 
         <AccountCard id="connections" title="Connections" description="Connected services can unlock sign-in options and supporter status.">
-          <ConnectionStatus label="Discord" connected={Boolean(discord)} detail={discord} />
-          <ConnectionStatus label="Google" connected={Boolean(google)} detail={google} />
+          <ConnectionStatus
+            label="Discord"
+            connected={Boolean(discord)}
+            detail={oauthLinkDetail(discord)}
+            action={discord ? (
+              <Button type="button" variant="secondary" onClick={() => handleOAuthUnlink("discord")} disabled={oauthLoading !== null}>{oauthLoading === "discord" ? "Unlinking…" : "Unlink Discord"}</Button>
+            ) : (
+              <Button type="button" onClick={() => handleOAuthLink("discord")} disabled={oauthLoading !== null}>{oauthLoading === "discord" ? "Redirecting…" : "Link Discord"}</Button>
+            )}
+          />
+          <ConnectionStatus
+            label="Google"
+            connected={Boolean(google)}
+            detail={oauthLinkDetail(google)}
+            action={google ? (
+              <Button type="button" variant="secondary" onClick={() => handleOAuthUnlink("google")} disabled={oauthLoading !== null}>{oauthLoading === "google" ? "Unlinking…" : "Unlink Google"}</Button>
+            ) : (
+              <Button type="button" onClick={() => handleOAuthLink("google")} disabled={oauthLoading !== null}>{oauthLoading === "google" ? "Redirecting…" : "Link Google"}</Button>
+            )}
+          />
           <ConnectionStatus
             label="Patreon"
             connected={Boolean(patreon?.linked)}
@@ -366,6 +503,7 @@ export default function Accounts() {
           />
           {patreon?.linked && patreon.tierIds.length > 0 && <p className="text-sm text-muted-foreground">Tiers: <span className="font-semibold text-foreground">{patreon.tierIds.join(", ")}</span></p>}
           {patreon?.linked && patreon.entitledAmountCents != null && <p className="text-sm text-muted-foreground">Pledge: <span className="font-semibold text-foreground">${(patreon.entitledAmountCents / 100).toFixed(2)}/month</span></p>}
+          {oauthError && <ErrorMessage>{oauthError}</ErrorMessage>}
           {patreonError && <ErrorMessage>{patreonError}</ErrorMessage>}
         </AccountCard>
 

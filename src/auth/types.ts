@@ -26,9 +26,11 @@ export interface ProfileResponse {
   displayName: string;
   photonUserId?: string;
   emailVerified: boolean;
+  hasPassword: boolean;
   roles: string[];
   permissions?: string[];
   patreon: PatreonStatus;
+  oAuthLinks?: OAuthLinkResponse[];
   description?: string | null;
   avatarKey?: string | null;
   socials?: Record<string, string>;
