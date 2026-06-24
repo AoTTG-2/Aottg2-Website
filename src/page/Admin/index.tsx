@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiGrid, FiHeart, FiHome, FiKey, FiMail, FiMoreHorizontal, FiSettings, FiShield, FiUsers } from "react-icons/fi";
+import { FiFileText, FiGrid, FiHeart, FiHome, FiKey, FiMail, FiMoreHorizontal, FiSettings, FiShield, FiSlash, FiUsers } from "react-icons/fi";
 import {
   Badge,
   Button,
@@ -61,13 +61,14 @@ import {
 import { authApi } from "../../auth/api";
 import { ADMIN_ACCESS_PERMISSIONS } from "../../auth/adminPermissions";
 import { useAuth } from "../../auth/useAuth";
-import type { AdminAccountDetailResponse, AdminAccountFilters, AuditEventResponse, EmailLimitStatusResponse, PatreonTierResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
+import type { AdminAccountDetailResponse, AdminAccountFilters, AdminRestrictionStatusFilter, AuditEventResponse, EmailLimitStatusResponse, PatreonTierResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
 import { AuditFilterSettings } from "./AuditFilterSettings";
 import { UserFilterSettings } from "./UserFilterSettings";
 import { EMPTY_USER_FILTERS } from "./userFilters";
 
-type AdminSection = "overview" | "users" | "roles" | "permissions" | "audits" | "emails" | "patreon";
+type AdminSection = "overview" | "users" | "banned" | "roles" | "permissions" | "audits" | "emails" | "patreon";
 const ADMIN_DIALOG_SCROLL_CLASS = "max-h-[calc(100dvh-2rem)] overflow-y-auto";
+type RestrictionKindDraft = "ban" | "suspension";
 
 type ActionMenuItem = {
   label: string;
@@ -108,10 +109,42 @@ function formatDate(value?: string) {
   return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
 }
 
+function formatDateTimeLocal(value: Date) {
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`;
+}
+
 function formatAuditTimestamp(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function restrictionLabel(status?: string) {
+  if (status === "banned") return "Banned";
+  if (status === "suspended") return "Suspended";
+  return "Active";
+}
+
+function restrictionBadgeVariant(status?: string): BadgeVariant {
+  if (status === "banned") return "destructive";
+  if (status === "suspended") return "textured";
+  return "secondary";
+}
+
+function restrictionCountdown(expiresAt?: string | null) {
+  if (!expiresAt) return "";
+  const expiry = new Date(expiresAt).getTime();
+  if (Number.isNaN(expiry)) return "";
+  const remaining = expiry - Date.now();
+  if (remaining <= 0) return "expired";
+  const minutes = Math.ceil(remaining / 60000);
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  const mins = minutes % 60;
+  if (days > 0) return `${days}d ${hours}h remaining`;
+  if (hours > 0) return `${hours}h ${mins}m remaining`;
+  return `${mins}m remaining`;
 }
 
 function formatCount(value?: number) {
@@ -314,6 +347,37 @@ function renderAuditActivity(event: AuditEventResponse, roles: RoleResponse[], a
           {renderAuditChanges(metadata)}
         </span>
       );
+    case "admin.account_restricted": {
+      const kind = getMetadataString(metadata, "kind");
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction tone="removed">{kind === "ban" ? "banned" : "suspended"}</AuditAction>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+    }
+    case "admin.account_restriction_lifted":
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction tone="added">lifted restriction</AuditAction>
+          <span>for</span>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+    case "admin.account_flag_cleared": {
+      const flag = getMetadataString(metadata, "flag");
+      return (
+        <span className={contentClassName}>
+          <AuditName>{actor}</AuditName>
+          <AuditAction>cleared</AuditAction>
+          <AuditValue>{flag ?? "a flag"}</AuditValue>
+          <span>from</span>
+          <AuditName>{target}</AuditName>
+        </span>
+      );
+    }
     case "admin.email_limits_updated":
       return (
         <span className={contentClassName}>
@@ -536,6 +600,7 @@ export default function Admin() {
   const canReadUsers = can("users.read");
   const canUpdateUsers = can("users.update");
   const canDeleteUsers = can("users.delete");
+  const canRestrictUsers = can("users.restrict");
   const canAssignUserRoles = can("users.roles.assign");
   const canRemoveUserRoles = can("users.roles.remove");
   const canManageUserRoles = can("users.roles.read") && (canAssignUserRoles || canRemoveUserRoles);
@@ -599,6 +664,7 @@ export default function Admin() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [userFilters, setUserFilters] = useState<AdminAccountFilters>(EMPTY_USER_FILTERS);
+  const [bannedStatusFilter, setBannedStatusFilter] = useState<AdminRestrictionStatusFilter>("restricted");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -610,6 +676,10 @@ export default function Admin() {
   const [editVerified, setEditVerified] = useState(false);
   const [assignUser, setAssignUser] = useState<ProfileResponse | null>(null);
   const [roleDraft, setRoleDraft] = useState<string[]>([]);
+  const [restrictUser, setRestrictUser] = useState<ProfileResponse | AdminAccountDetailResponse | null>(null);
+  const [restrictionKind, setRestrictionKind] = useState<RestrictionKindDraft>("suspension");
+  const [restrictionReason, setRestrictionReason] = useState("");
+  const [restrictionExpiresAt, setRestrictionExpiresAt] = useState("");
   const [patreonUser, setPatreonUser] = useState<ProfileResponse | AdminAccountDetailResponse | null>(null);
   const [patreonTierDraft, setPatreonTierDraft] = useState<string[]>([]);
   const [patreonStatusDraft, setPatreonStatusDraft] = useState("");
@@ -631,6 +701,7 @@ export default function Admin() {
   const sectionItems: Array<{ id: AdminSection; label: string; icon: ReactNode; visible: boolean }> = [
     { id: "overview", label: "Overview", icon: <FiGrid />, visible: canAccessAdmin },
     { id: "users", label: "Users", icon: <FiUsers />, visible: canReadUsers },
+    { id: "banned", label: "Banned users", icon: <FiSlash />, visible: canReadUsers },
     { id: "roles", label: "Roles", icon: <FiShield />, visible: canReadRoles },
     { id: "permissions", label: "Permissions", icon: <FiKey />, visible: canReadPermissions },
     { id: "audits", label: "Audit logs", icon: <FiFileText />, visible: canReadAudits },
@@ -658,6 +729,10 @@ export default function Admin() {
 
     return () => window.clearTimeout(timeout);
   }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [bannedStatusFilter, section]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -762,13 +837,16 @@ export default function Admin() {
   }, [canReadPatreon, patreonRefreshKey, section]);
 
   useEffect(() => {
-    if (!canReadUsers || section !== "users") return;
+    if (!canReadUsers || (section !== "users" && section !== "banned")) return;
 
     const controller = new AbortController();
     setUsersLoading(true);
     setUsersError("");
+    const effectiveFilters: AdminAccountFilters = section === "banned"
+      ? { ...userFilters, restrictionStatus: bannedStatusFilter }
+      : userFilters;
 
-    authApi.listAdminAccounts(debouncedSearch, page, pageSize, userFilters, controller.signal)
+    authApi.listAdminAccounts(debouncedSearch, page, pageSize, effectiveFilters, controller.signal)
       .then(({ ok, data }) => {
         if (controller.signal.aborted) return;
         if (ok) {
@@ -788,7 +866,7 @@ export default function Admin() {
       });
 
     return () => controller.abort();
-  }, [canReadUsers, debouncedSearch, page, pageSize, refreshKey, section, userFilters]);
+  }, [bannedStatusFilter, canReadUsers, debouncedSearch, page, pageSize, refreshKey, section, userFilters]);
 
   useEffect(() => {
     if (!canReadAudits || section !== "audits") return;
@@ -1091,6 +1169,14 @@ export default function Admin() {
     setRoleDraft(user.roles);
   }
 
+  function openRestriction(user: ProfileResponse | AdminAccountDetailResponse, kind: RestrictionKindDraft) {
+    setRestrictUser(user);
+    setRestrictionKind(kind);
+    setRestrictionReason(user.restriction?.reason ?? "");
+    const defaultExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    setRestrictionExpiresAt(formatDateTimeLocal(user.restriction?.expiresAt ? new Date(user.restriction.expiresAt) : defaultExpiry));
+  }
+
   function openPatreon(user: ProfileResponse | AdminAccountDetailResponse) {
     setPatreonUser(user);
     setPatreonTierDraft(user.patreon?.tierIds ?? []);
@@ -1122,6 +1208,85 @@ export default function Admin() {
     } catch {
       toast.error("Action failed", { description: "Network error." });
       return false;
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function saveRestriction() {
+    if (!restrictUser) return;
+    const reason = restrictionReason.trim();
+    if (!reason) {
+      toast.error("Reason required");
+      return;
+    }
+
+    const expiresAt = restrictionKind === "suspension" ? new Date(restrictionExpiresAt) : null;
+    if (restrictionKind === "suspension" && (!expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt <= new Date())) {
+      toast.error("Invalid suspension end time", { description: "Choose a future date and time." });
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { ok, data } = await authApi.restrictAdminAccount(restrictUser.accountId, {
+        kind: restrictionKind,
+        reason,
+        expiresAt: expiresAt?.toISOString() ?? null,
+      });
+
+      if (!ok) {
+        toast.error("Restriction failed", { description: data.error });
+        return;
+      }
+
+      toast.success(restrictionKind === "ban" ? "User banned" : "User suspended");
+      if (detail?.accountId === data.accountId) setDetail(data);
+      setRestrictUser(null);
+      refetchUsers();
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Restriction failed", { description: "Network error." });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function liftRestriction(user: ProfileResponse | AdminAccountDetailResponse) {
+    setActionLoading(true);
+    try {
+      const { ok, data } = await authApi.liftAdminRestriction(user.accountId);
+      if (!ok) {
+        toast.error("Lift restriction failed", { description: data.error });
+        return;
+      }
+
+      toast.success("Restriction lifted");
+      if (detail?.accountId === data.accountId) setDetail(data);
+      refetchUsers();
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Lift restriction failed", { description: "Network error." });
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function clearAccountFlag(user: ProfileResponse | AdminAccountDetailResponse, flag: string) {
+    setActionLoading(true);
+    try {
+      const { ok, data } = await authApi.clearAdminAccountFlag(user.accountId, flag);
+      if (!ok) {
+        toast.error("Clear flag failed", { description: data.error });
+        return;
+      }
+
+      toast.success("Flag cleared");
+      if (detail?.accountId === data.accountId) setDetail(data);
+      refetchUsers();
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Clear flag failed", { description: "Network error." });
     } finally {
       setActionLoading(false);
     }
@@ -1307,6 +1472,16 @@ export default function Admin() {
       cell: (user: ProfileResponse) => <StatusBadge status={user.emailVerified ? "active" : "pending"}>{user.emailVerified ? "Verified" : "Unverified"}</StatusBadge>,
     },
     {
+      key: "status",
+      header: "Status",
+      cell: (user: ProfileResponse) => (
+        <div className="space-y-1.5">
+          <Badge variant={restrictionBadgeVariant(user.restrictionStatus)}>{restrictionLabel(user.restrictionStatus)}</Badge>
+          {user.restriction?.expiresAt ? <div className="text-xs text-muted-foreground">{restrictionCountdown(user.restriction.expiresAt)}</div> : null}
+        </div>
+      ),
+    },
+    {
       key: "patreon",
       header: "Patreon",
       cell: (user: ProfileResponse) => (
@@ -1332,6 +1507,11 @@ export default function Admin() {
           canManageUserRoles ? { label: "Manage roles", onSelect: () => openAssign(user) } : null,
           canUpdatePatreon ? { label: "Manage Patreon", onSelect: () => openPatreon(user) } : null,
           canUpdatePatreon && user.patreon?.linked ? { label: "Refresh Patreon", onSelect: () => void refreshUserPatreon(user) } : null,
+          canRestrictUsers && user.accountId !== profile?.accountId ? { label: "Suspend", onSelect: () => openRestriction(user, "suspension") } : null,
+          canRestrictUsers && user.accountId !== profile?.accountId ? { label: "Ban", onSelect: () => openRestriction(user, "ban"), destructive: true } : null,
+          canRestrictUsers && user.restrictionStatus && user.restrictionStatus !== "active" ? { label: "Lift restriction", onSelect: () => void liftRestriction(user) } : null,
+          canRestrictUsers && user.roles.includes("suspicion-ip") ? { label: "Clear IP flag", onSelect: () => void clearAccountFlag(user, "suspicion-ip") } : null,
+          canRestrictUsers && user.roles.includes("inquire") ? { label: "Clear shared-IP flag", onSelect: () => void clearAccountFlag(user, "inquire") } : null,
           canDeleteUsers && user.accountId !== profile?.accountId ? { label: "Delete account", onSelect: () => setDeleteUser(user), destructive: true } : null,
         ].filter((item): item is ActionMenuItem => item !== null)} />
       ),
@@ -1442,6 +1622,7 @@ export default function Admin() {
               <div className="grid gap-4 lg:grid-cols-3">
                 {[
                   { title: "Users", description: "Search, inspect, edit, roles, delete.", section: "users" as AdminSection, visible: canReadUsers },
+                  { title: "Banned users", description: "Review bans, suspensions, and IP flags.", section: "banned" as AdminSection, visible: canReadUsers },
                   { title: "Roles", description: "Create roles and set permissions.", section: "roles" as AdminSection, visible: canReadRoles },
                   { title: "Permissions", description: "Read backend permission catalog.", section: "permissions" as AdminSection, visible: canReadPermissions },
                   { title: "Audit logs", description: "Review account and admin audit events.", section: "audits" as AdminSection, visible: canReadAudits },
@@ -1499,6 +1680,73 @@ export default function Admin() {
                     <EmptyState title="Could not load users" description={usersError} action={<Button type="button" onClick={refetchUsers}>Try again</Button>} />
                   ) : (
                     <DataTable className="admin-data-table" columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No users found" emptyDescription="Try another search or filter." />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem><PaginationPrevious href="#" onClick={(event) => { event.preventDefault(); setPage((current) => Math.max(1, current - 1)); }} /></PaginationItem>
+                  <PaginationItem><PaginationLink href="#" isActive>{page} / {pageCount}</PaginationLink></PaginationItem>
+                  <PaginationItem><PaginationNext href="#" onClick={(event) => { event.preventDefault(); setPage((current) => Math.min(pageCount, current + 1)); }} /></PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </>
+          ) : null}
+
+          {section === "banned" ? (
+            <>
+              <Card className="border-border bg-card text-card-foreground">
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <CardTitle>Banned users</CardTitle>
+                      <CardDescription className="mt-2">Bans, active suspensions, same-IP suspicion flags, and lift actions.</CardDescription>
+                    </div>
+                    <Badge variant="secondary">{totalUsers} restricted</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      ["restricted", "All"] as const,
+                      ["banned", "Banned"] as const,
+                      ["suspended", "Suspended"] as const,
+                    ].map(([value, label]) => (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant={bannedStatusFilter === value ? "default" : "secondary"}
+                        onClick={() => setBannedStatusFilter(value)}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                  <FilterBar className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                    <SearchInput value={search} onChange={(event: ChangeEvent<HTMLInputElement>) => setSearch(event.target.value)} onClear={() => setSearch("")} placeholder="Search restricted users" className="max-w-none" />
+                    <div className="flex w-full flex-wrap items-center justify-end gap-3 md:w-auto md:pr-2">
+                      <UserFilterSettings roles={roles} value={userFilters} onApply={applyUserFilters} onReset={resetUserFilters} />
+                      <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1); }}>
+                        <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {[20, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="secondary" onClick={refetchUsers}>Refresh</Button>
+                    </div>
+                  </FilterBar>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card text-card-foreground">
+                <CardContent className="p-0">
+                  {usersLoading ? (
+                    <div className="flex min-h-48 items-center justify-center p-6"><Spinner label="Loading banned users" /></div>
+                  ) : usersError ? (
+                    <EmptyState title="Could not load banned users" description={usersError} action={<Button type="button" onClick={refetchUsers}>Try again</Button>} />
+                  ) : (
+                    <DataTable className="admin-data-table" columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No banned or suspended users" emptyDescription="Restricted accounts will appear here." />
                   )}
                 </CardContent>
               </Card>
@@ -1856,7 +2104,7 @@ export default function Admin() {
           </DialogHeader>
           {detailLoading ? <Spinner label="Loading user" /> : detail ? (
             <div className="grid gap-4 text-sm md:grid-cols-2">
-              <Card><CardContent className="space-y-2 p-4"><div><b>Photon:</b> {detail.photonUserId}</div><div><b>Sessions:</b> {detail.activeSessionCount}</div><div><b>Created:</b> {formatDate(detail.createdAt)}</div><div><b>Updated:</b> {formatDate(detail.updatedAt)}</div></CardContent></Card>
+              <Card><CardContent className="space-y-2 p-4"><div><b>Photon:</b> {detail.photonUserId}</div><div><b>Sessions:</b> {detail.activeSessionCount}</div><div><b>Status:</b> <Badge variant={restrictionBadgeVariant(detail.restrictionStatus)}>{restrictionLabel(detail.restrictionStatus)}</Badge></div><div><b>Created:</b> {formatDate(detail.createdAt)}</div><div><b>Updated:</b> {formatDate(detail.updatedAt)}</div></CardContent></Card>
               <Card>
                 <CardContent className="space-y-3 p-4">
                   <div><b>Password:</b> {detail.hasPassword ? "Yes" : "No"}</div>
@@ -1880,6 +2128,54 @@ export default function Admin() {
                   ) : null}
                 </CardContent>
               </Card>
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <CardTitle>Restriction</CardTitle>
+                      <CardDescription>{detail.restriction ? detail.restriction.reason : "No active restriction."}</CardDescription>
+                    </div>
+                    {canRestrictUsers ? (
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="secondary" disabled={actionLoading || detail.accountId === profile?.accountId} onClick={() => openRestriction(detail, "suspension")}>Suspend</Button>
+                        <Button type="button" variant="destructive" disabled={actionLoading || detail.accountId === profile?.accountId} onClick={() => openRestriction(detail, "ban")}>Ban</Button>
+                        {detail.restrictionStatus !== "active" ? <Button type="button" variant="secondary" disabled={actionLoading} onClick={() => void liftRestriction(detail)}>Lift</Button> : null}
+                      </div>
+                    ) : null}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {detail.restriction ? (
+                    <div className="grid gap-2 md:grid-cols-3">
+                      <div><b>Type:</b> {detail.restriction.kind}</div>
+                      <div><b>Restricted:</b> {formatAuditTimestamp(detail.restriction.restrictedAt)}</div>
+                      <div><b>Expires:</b> {detail.restriction.expiresAt ? `${formatAuditTimestamp(detail.restriction.expiresAt)} (${restrictionCountdown(detail.restriction.expiresAt)})` : "Never"}</div>
+                    </div>
+                  ) : <p className="text-muted-foreground">Account can log in and use normal account actions.</p>}
+                </CardContent>
+              </Card>
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle>Same IP accounts</CardTitle>
+                  <CardDescription>{detail.canViewRawIp ? "Raw IP visible to admins." : "Raw IP hidden for this viewer."}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {detail.sameIpAccounts?.length ? detail.sameIpAccounts.map((account) => (
+                    <div key={account.accountId} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+                      <button type="button" className="min-w-0 text-left" onClick={() => void viewDetails(account as ProfileResponse)}>
+                        <div className="font-semibold text-foreground">{account.displayName}</div>
+                        <div className="break-all text-xs text-muted-foreground">{account.email}</div>
+                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={restrictionBadgeVariant(account.restrictionStatus)}>{restrictionLabel(account.restrictionStatus)}</Badge>
+                        {account.roles.includes("suspicion-ip") ? <Badge variant="outline">IP flag</Badge> : null}
+                        {account.roles.includes("inquire") ? <Badge variant="secondary">shared IP</Badge> : null}
+                        {canRestrictUsers && account.roles.includes("suspicion-ip") ? <Button type="button" size="sm" variant="secondary" disabled={actionLoading} onClick={() => void clearAccountFlag(account as ProfileResponse, "suspicion-ip")}>Clear IP flag</Button> : null}
+                      </div>
+                    </div>
+                  )) : <p className="text-muted-foreground">No other accounts share this creation IP.</p>}
+                </CardContent>
+              </Card>
               <Card className="md:col-span-2"><CardHeader><CardTitle>OAuth links</CardTitle></CardHeader><CardContent>{oauthLinks.length ? oauthLinks.map((link) => <div key={`${link.provider}-${link.providerUserId}`}>{link.provider}: {link.providerEmail ?? link.providerUserId}</div>) : "None"}</CardContent></Card>
               <Card className="md:col-span-2">
                 <CardHeader>
@@ -1892,6 +2188,49 @@ export default function Admin() {
               </Card>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={restrictUser !== null} onOpenChange={(open) => !open && setRestrictUser(null)}>
+        <DialogContent className={ADMIN_DIALOG_SCROLL_CLASS}>
+          <DialogHeader>
+            <DialogTitle>{restrictionKind === "ban" ? "Ban user" : "Suspend user"}</DialogTitle>
+            <DialogDescription>{restrictUser?.email}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="restriction-kind">Action</Label>
+              <Select value={restrictionKind} onValueChange={(value) => setRestrictionKind(value as RestrictionKindDraft)}>
+                <SelectTrigger id="restriction-kind"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="suspension">Suspend with expiry</SelectItem>
+                  <SelectItem value="ban">Ban until lifted</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {restrictionKind === "suspension" ? (
+              <div className="space-y-2">
+                <Label htmlFor="restriction-expires-at">Suspension ends</Label>
+                <Input id="restriction-expires-at" type="datetime-local" value={restrictionExpiresAt} onChange={(event) => setRestrictionExpiresAt(event.target.value)} />
+              </div>
+            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="restriction-reason">Reason</Label>
+              <Textarea
+                id="restriction-reason"
+                value={restrictionReason}
+                onChange={(event) => setRestrictionReason(event.target.value)}
+                placeholder="Reason shown to the user on login."
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setRestrictUser(null)}>Cancel</Button>
+            <Button type="button" variant={restrictionKind === "ban" ? "destructive" : "default"} disabled={actionLoading || !restrictionReason.trim()} onClick={() => void saveRestriction()}>
+              {restrictionKind === "ban" ? "Ban user" : "Suspend user"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

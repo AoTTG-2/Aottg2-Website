@@ -29,6 +29,8 @@ export interface ProfileResponse {
   hasPassword: boolean;
   roles: string[];
   permissions?: string[];
+  restrictionStatus?: string;
+  restriction?: AccountRestrictionResponse | null;
   patreon: PatreonStatus;
   oAuthLinks?: OAuthLinkResponse[];
   description?: string | null;
@@ -58,10 +60,12 @@ export interface UpdateProfileRequest {
 }
 
 export type AdminEmailVerifiedFilter = "any" | "verified" | "unverified";
+export type AdminRestrictionStatusFilter = "any" | "active" | "restricted" | "banned" | "suspended";
 
 export interface AdminAccountFilters {
   roles: string[];
   emailVerified: AdminEmailVerifiedFilter;
+  restrictionStatus?: AdminRestrictionStatusFilter;
   displayName: string;
 }
 
@@ -173,13 +177,41 @@ export interface AuditEventListResponse {
   events: AuditEventResponse[];
 }
 
+export interface AccountRestrictionResponse {
+  kind: "ban" | "suspension" | string;
+  status: "banned" | "suspended" | string;
+  reason: string;
+  expiresAt?: string | null;
+  restrictedAt: string;
+  restrictedByAccountId?: string | null;
+}
+
+export interface SameIpAccountResponse {
+  accountId: string;
+  email: string;
+  displayName: string;
+  roles: string[];
+  restrictionStatus: string;
+  restrictionKind?: string | null;
+  createdAt: string;
+  creationIpAddress?: string | null;
+}
+
 export interface AdminAccountDetailResponse extends ProfileResponse {
   hasPassword: boolean;
   creationIpAddress?: string | null;
+  canViewRawIp?: boolean;
+  sameIpAccounts?: SameIpAccountResponse[];
   oAuthLinks: OAuthLinkResponse[];
   activeSessionCount: number;
   updatedAt: string;
   recentAuditEvents: AuditEventResponse[];
+}
+
+export interface RestrictAccountRequest {
+  kind: "ban" | "suspension";
+  reason: string;
+  expiresAt?: string | null;
 }
 
 export interface AccountRolesResponse {
@@ -213,6 +245,8 @@ export interface SessionCodeResponse {
 
 export interface ErrorResponse {
   error?: string;
+  code?: string;
+  restriction?: AccountRestrictionResponse;
 }
 
 export interface ApiResult<T = unknown> {

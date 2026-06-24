@@ -18,6 +18,7 @@ import type {
   ProfilePresetCatalog,
   ProfileResponse,
   RegisterResponse,
+  RestrictAccountRequest,
   RoleResponse,
   SessionCodeResponse,
   UpdateEmailLimitSettingsRequest,
@@ -189,6 +190,7 @@ export const authApi = {
     if (filters?.displayName.trim()) params.set("displayName", filters.displayName.trim());
     if (filters?.emailVerified === "verified") params.set("emailVerified", "true");
     if (filters?.emailVerified === "unverified") params.set("emailVerified", "false");
+    if (filters?.restrictionStatus && filters.restrictionStatus !== "any") params.set("restrictionStatus", filters.restrictionStatus);
     filters?.roles.forEach((role) => {
       if (role.trim()) params.append("roles", role.trim());
     });
@@ -270,6 +272,18 @@ export const authApi = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+
+  restrictAdminAccount: (id: string, body: RestrictAccountRequest) =>
+    request<AdminAccountDetailResponse & ErrorResponse>(`/admin/accounts/${id}/restriction`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+
+  liftAdminRestriction: (id: string) =>
+    request<AdminAccountDetailResponse & ErrorResponse>(`/admin/accounts/${id}/restriction`, { method: "DELETE" }),
+
+  clearAdminAccountFlag: (id: string, flag: string) =>
+    request<AdminAccountDetailResponse & ErrorResponse>(`/admin/accounts/${id}/flags/${encodeURIComponent(flag)}`, { method: "DELETE" }),
 
   assignRole: (id: string, roleName: string) =>
     request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/roles/${encodeURIComponent(roleName)}`, { method: "PUT" }),

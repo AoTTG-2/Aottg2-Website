@@ -10,6 +10,16 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+function formatRestrictedLoginError(data: { code?: string; error?: string; restriction?: { status?: string; reason?: string; expiresAt?: string | null } }) {
+  if (data.code !== "account_restricted" || !data.restriction) {
+    return data.error ?? "Login failed. Please try again.";
+  }
+
+  const label = data.restriction.status === "suspended" ? "SUSPENSION" : "BAN";
+  const until = data.restriction.expiresAt ? ` Until: ${new Date(data.restriction.expiresAt).toLocaleString()}.` : "";
+  return `REASON FOR ${label}: ${data.restriction.reason || "No reason provided."}${until}`;
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(hasTokens);
@@ -70,7 +80,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = useCallback(async (email: string, password: string) => {
     const { ok, data } = await authApi.login(email, password);
     if (!ok || !data.accessToken || !data.refreshToken) {
-      return { ok: false, error: data.error ?? "Login failed. Please try again." };
+      return { ok: false, error: formatRestrictedLoginError(data) };
     }
 
     setTokens(data.accessToken, data.refreshToken);
@@ -109,4 +119,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-

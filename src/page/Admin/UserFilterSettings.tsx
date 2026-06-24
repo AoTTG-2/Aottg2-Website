@@ -12,7 +12,7 @@ import {
   SelectValue,
   Separator,
 } from "@aottg2/ui";
-import type { AdminAccountFilters, AdminEmailVerifiedFilter, RoleResponse } from "../../auth/types";
+import type { AdminAccountFilters, AdminEmailVerifiedFilter, AdminRestrictionStatusFilter, RoleResponse } from "../../auth/types";
 import { FilterSettingsPopover } from "./FilterSettingsPopover";
 import { countUserFilters, EMPTY_USER_FILTERS, normalizeUserFilters } from "./userFilters";
 
@@ -96,6 +96,26 @@ export function UserFilterSettings({ roles, value, onApply, onReset }: UserFilte
                 <SelectItem value="any">Any status</SelectItem>
                 <SelectItem value="verified">Verified</SelectItem>
                 <SelectItem value="unverified">Unverified</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="admin-filter-restriction-status">Account status</Label>
+            <Select
+              value={draft.restrictionStatus ?? "any"}
+              onValueChange={(nextValue) => setDraft((current) => ({
+                ...current,
+                restrictionStatus: nextValue as AdminRestrictionStatusFilter,
+              }))}
+            >
+              <SelectTrigger id="admin-filter-restriction-status"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="restricted">Banned or suspended</SelectItem>
+                <SelectItem value="banned">Banned</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
               </SelectContent>
             </Select>
           </div>
