@@ -56,6 +56,10 @@ import {
   StatCard,
   StatusBadge,
   Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
   toast,
 } from "@aottg2/ui";
 import { authApi } from "../../auth/api";
@@ -67,7 +71,8 @@ import { UserFilterSettings } from "./UserFilterSettings";
 import { EMPTY_USER_FILTERS } from "./userFilters";
 
 type AdminSection = "overview" | "users" | "banned" | "roles" | "permissions" | "audits" | "emails" | "patreon";
-const ADMIN_DIALOG_SCROLL_CLASS = "max-h-[calc(100dvh-2rem)] overflow-y-auto";
+const ADMIN_DIALOG_SCROLL_CLASS = "max-h-[calc(100dvh-4rem)] overflow-y-auto z-[1200]";
+const ADMIN_DETAIL_DIALOG_CLASS = "max-h-[calc(100dvh-4rem)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden z-[1200]";
 type RestrictionKindDraft = "ban" | "suspension";
 
 type ActionMenuItem = {
@@ -463,6 +468,135 @@ function roleLabel(role: string, roles: RoleResponse[]) {
 }
 
 type BadgeVariant = "default" | "destructive" | "textured" | "secondary" | "outline";
+
+const ROLE_PRIORITY = ["admin", "developer", "moderator", "trusted", "inquire", "player"];
+
+function sortRolesForDisplay(roles: string[]) {
+  return [...roles].sort((a, b) => {
+    const aRank = ROLE_PRIORITY.indexOf(a);
+    const bRank = ROLE_PRIORITY.indexOf(b);
+    return (aRank === -1 ? 99 : aRank) - (bRank === -1 ? 99 : bRank);
+  });
+}
+
+function shortRestrictionCountdown(expiresAt?: string | null) {
+  return restrictionCountdown(expiresAt).replace(" remaining", "");
+}
+
+function CappedBadgeList({
+  emptyText,
+  getLabel,
+  getVariant,
+  items,
+  limit = 2,
+  onClick,
+}: {
+  emptyText?: string;
+  getLabel: (item: string) => string;
+  getVariant?: (item: string) => BadgeVariant;
+  items: string[];
+  limit?: number;
+  onClick?: () => void;
+}) {
+  if (!items.length) return emptyText ? <span className="text-xs text-muted-foreground">{emptyText}</span> : null;
+
+  const visible = items.slice(0, limit);
+  const hidden = items.slice(limit);
+  const renderPill = (key: string, label: string, variant: BadgeVariant, tooltip: string) => {
+    const badge = <Badge variant={variant} className="shrink-0 whitespace-nowrap text-[0.68rem]">{label}</Badge>;
+    return (
+      <Tooltip key={key}>
+        <TooltipTrigger asChild>
+          {onClick ? (
+            <button type="button" className="shrink-0" onClick={onClick}>
+              {badge}
+            </button>
+          ) : (
+            <span className="shrink-0">{badge}</span>
+          )}
+        </TooltipTrigger>
+        <TooltipContent>{tooltip}</TooltipContent>
+      </Tooltip>
+    );
+  };
+
+  return (
+    <div className="inline-flex max-w-full flex-wrap items-center gap-1">
+      {visible.map((item) => (
+        renderPill(item, getLabel(item), getVariant?.(item) ?? "secondary", getLabel(item))
+      ))}
+      {hidden.length ? (
+        renderPill("overflow", `+${hidden.length}`, "outline", hidden.map(getLabel).join(", "))
+      ) : null}
+    </div>
+  );
+}
+
+function TooltipText({ className = "", value }: { className?: string; value: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={`block truncate ${className}`}>{value}</span>
+      </TooltipTrigger>
+      <TooltipContent>{value}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function TooltipBadge({ children, tooltip }: { children: ReactNode; tooltip: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex">{children}</span>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function DetailCellButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return (
+    <button type="button" className="block w-full min-w-0 text-left" onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
+function DetailRow({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <div className="grid grid-cols-[6rem_minmax(0,1fr)] gap-3 text-xs leading-6 sm:grid-cols-[7rem_minmax(0,1fr)] sm:text-sm">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-words font-medium text-foreground">{children}</dd>
+    </div>
+  );
+}
+
+function DetailSection({
+  actions,
+  children,
+  description,
+  title,
+}: {
+  actions?: ReactNode;
+  children: ReactNode;
+  description?: ReactNode;
+  title: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-3 sm:p-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="font-display text-base font-semibold leading-tight text-foreground">{title}</h3>
+            {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
+          </div>
+          {actions}
+        </div>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
 
 type MultiSelectItem = {
   key: string;
@@ -1450,52 +1584,81 @@ export default function Admin() {
     {
       key: "user",
       header: "User",
+      className: "w-64",
       cell: (user: ProfileResponse) => (
-        <button type="button" className="text-left" onClick={() => void viewDetails(user)}>
-          <div className="font-semibold text-foreground">{user.displayName}</div>
-          <div className="text-xs text-muted-foreground">{user.email}</div>
-        </button>
+        <DetailCellButton onClick={() => void viewDetails(user)}>
+          <div className="w-56 max-w-full">
+            <TooltipText className="text-sm font-semibold text-foreground" value={user.displayName} />
+            <TooltipText className="text-xs text-muted-foreground" value={user.email} />
+          </div>
+        </DetailCellButton>
       ),
     },
     {
       key: "roles",
       header: "Roles",
+      className: "w-72",
       cell: (user: ProfileResponse) => (
-        <div className="flex flex-wrap gap-1">
-          {user.roles.map((role) => <Badge key={role} variant={roleVariant(role)}>{roleLabel(role, roles)}</Badge>)}
-        </div>
+        <CappedBadgeList
+          items={sortRolesForDisplay(user.roles)}
+          getLabel={(role) => roleLabel(role, roles)}
+          getVariant={roleVariant}
+          onClick={canManageUserRoles ? () => openAssign(user) : undefined}
+        />
       ),
     },
     {
       key: "email",
       header: "Email",
-      cell: (user: ProfileResponse) => <StatusBadge status={user.emailVerified ? "active" : "pending"}>{user.emailVerified ? "Verified" : "Unverified"}</StatusBadge>,
+      className: "w-32",
+      cell: (user: ProfileResponse) => (
+        <DetailCellButton onClick={() => void viewDetails(user)}>
+          <StatusBadge status={user.emailVerified ? "active" : "pending"}>{user.emailVerified ? "Verified" : "Unverified"}</StatusBadge>
+        </DetailCellButton>
+      ),
     },
     {
       key: "status",
       header: "Status",
+      className: "w-40",
       cell: (user: ProfileResponse) => (
-        <div className="space-y-1.5">
-          <Badge variant={restrictionBadgeVariant(user.restrictionStatus)}>{restrictionLabel(user.restrictionStatus)}</Badge>
-          {user.restriction?.expiresAt ? <div className="text-xs text-muted-foreground">{restrictionCountdown(user.restriction.expiresAt)}</div> : null}
-        </div>
+        <DetailCellButton onClick={() => void viewDetails(user)}>
+          <div className="flex flex-nowrap items-center gap-1.5">
+            <Badge variant={restrictionBadgeVariant(user.restrictionStatus)}>{restrictionLabel(user.restrictionStatus)}</Badge>
+            {user.restriction?.expiresAt ? <span className="whitespace-nowrap text-xs text-muted-foreground">{shortRestrictionCountdown(user.restriction.expiresAt)}</span> : null}
+          </div>
+        </DetailCellButton>
       ),
     },
     {
       key: "patreon",
       header: "Patreon",
+      className: "w-44",
       cell: (user: ProfileResponse) => (
-        <div className="space-y-1.5">
-          <StatusBadge status={user.patreon?.linked ? "active" : "draft"}>{patreonStatusText(user.patreon)}</StatusBadge>
-          {user.patreon?.tierIds.length ? (
-            <div className="flex flex-wrap gap-1">
-              {user.patreon.tierIds.map((tierId) => <Badge key={tierId} variant="secondary">{tierId}</Badge>)}
-            </div>
-          ) : null}
-        </div>
+        <DetailCellButton onClick={() => void viewDetails(user)}>
+          <div className="flex flex-nowrap items-center gap-1.5">
+            <StatusBadge status={user.patreon?.linked ? "active" : "draft"}>{patreonStatusText(user.patreon)}</StatusBadge>
+            {user.patreon?.tierIds.length ? (
+              <TooltipBadge tooltip={user.patreon.tierIds.join(", ")}>
+                <Badge variant="outline" className="whitespace-nowrap text-[0.68rem]">
+                  +{user.patreon.tierIds.length} tiers
+                </Badge>
+              </TooltipBadge>
+            ) : null}
+          </div>
+        </DetailCellButton>
       ),
     },
-    { key: "created", header: "Created", cell: (user: ProfileResponse) => formatDate(user.createdAt) },
+    {
+      key: "created",
+      header: "Created",
+      className: "w-36",
+      cell: (user: ProfileResponse) => (
+        <DetailCellButton onClick={() => void viewDetails(user)}>
+          <span className="whitespace-nowrap text-sm">{formatDate(user.createdAt)}</span>
+        </DetailCellButton>
+      ),
+    },
     {
       key: "actions",
       header: "Actions",
@@ -1594,6 +1757,7 @@ export default function Admin() {
   }
 
   return (
+    <TooltipProvider delayDuration={150}>
     <main className="relative z-10 min-h-[calc(100vh-3.5rem)] bg-background lg:min-h-[calc(100vh-4rem)]">
       <div className="flex min-h-[calc(100vh-3.5rem)] lg:min-h-[calc(100vh-4rem)]">
         <Sidebar className="fixed left-0 top-14 hidden h-[calc(100vh-3.5rem)] shrink-0 bg-card pl-3 shadow-none lg:top-16 lg:flex lg:h-[calc(100vh-4rem)]">
@@ -1679,7 +1843,7 @@ export default function Admin() {
                   ) : usersError ? (
                     <EmptyState title="Could not load users" description={usersError} action={<Button type="button" onClick={refetchUsers}>Try again</Button>} />
                   ) : (
-                    <DataTable className="admin-data-table" columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No users found" emptyDescription="Try another search or filter." />
+                    <DataTable className="admin-data-table admin-users-table" columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No users found" emptyDescription="Try another search or filter." />
                   )}
                 </CardContent>
               </Card>
@@ -1746,7 +1910,7 @@ export default function Admin() {
                   ) : usersError ? (
                     <EmptyState title="Could not load banned users" description={usersError} action={<Button type="button" onClick={refetchUsers}>Try again</Button>} />
                   ) : (
-                    <DataTable className="admin-data-table" columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No banned or suspended users" emptyDescription="Restricted accounts will appear here." />
+                    <DataTable className="admin-data-table admin-users-table" columns={userColumns} data={users} getRowKey={(user) => user.accountId} emptyTitle="No banned or suspended users" emptyDescription="Restricted accounts will appear here." />
                   )}
                 </CardContent>
               </Card>
@@ -2097,95 +2261,134 @@ export default function Admin() {
       </div>
 
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className={`max-w-3xl ${ADMIN_DIALOG_SCROLL_CLASS}`}>
+        <DialogContent className={`max-w-4xl ${ADMIN_DETAIL_DIALOG_CLASS}`}>
           <DialogHeader>
             <DialogTitle>{detail?.displayName ?? "User details"}</DialogTitle>
             <DialogDescription>{detail?.email ?? "Loading account detail."}</DialogDescription>
           </DialogHeader>
           {detailLoading ? <Spinner label="Loading user" /> : detail ? (
-            <div className="grid gap-4 text-sm md:grid-cols-2">
-              <Card><CardContent className="space-y-2 p-4"><div><b>Photon:</b> {detail.photonUserId}</div><div><b>Sessions:</b> {detail.activeSessionCount}</div><div><b>Status:</b> <Badge variant={restrictionBadgeVariant(detail.restrictionStatus)}>{restrictionLabel(detail.restrictionStatus)}</Badge></div><div><b>Created:</b> {formatDate(detail.createdAt)}</div><div><b>Updated:</b> {formatDate(detail.updatedAt)}</div></CardContent></Card>
-              <Card>
-                <CardContent className="space-y-3 p-4">
-                  <div><b>Password:</b> {detail.hasPassword ? "Yes" : "No"}</div>
-                  <div><b>IP:</b> {detail.creationIpAddress ?? "—"}</div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <b>Patreon:</b>
-                    <StatusBadge status={detail.patreon?.linked ? "active" : "draft"}>{patreonStatusText(detail.patreon)}</StatusBadge>
-                    {detail.patreon?.manualOverride ? <Badge variant="secondary">DB-only testing override</Badge> : null}
-                  </div>
-                  {detail.patreon?.tierIds.length ? (
-                    <div className="flex flex-wrap gap-1">{detail.patreon.tierIds.map((tierId) => <Badge key={tierId} variant="secondary">{tierId}</Badge>)}</div>
+            <div className="min-h-0 space-y-3 overflow-y-auto pr-1 text-sm">
+              <div className="flex flex-wrap items-center gap-1.5 border-y border-border py-2">
+                <Badge variant={restrictionBadgeVariant(detail.restrictionStatus)}>{restrictionLabel(detail.restrictionStatus)}</Badge>
+                <StatusBadge status={detail.emailVerified ? "active" : "pending"}>{detail.emailVerified ? "Verified" : "Unverified"}</StatusBadge>
+                <StatusBadge status={detail.patreon?.linked ? "active" : "draft"}>{patreonStatusText(detail.patreon)}</StatusBadge>
+                <Badge variant="outline" className="font-mono text-[0.68rem]">{detail.creationIpAddress ?? "No IP"}</Badge>
+                <Badge variant="secondary" className="text-[0.68rem]">{formatCount(detail.activeSessionCount)} sessions</Badge>
+              </div>
+
+              {(canRestrictUsers || canUpdatePatreon) ? (
+                <div className="flex flex-wrap gap-2">
+                  {canRestrictUsers ? (
+                    <>
+                      <Button type="button" size="sm" variant="secondary" disabled={actionLoading || detail.accountId === profile?.accountId} onClick={() => openRestriction(detail, "suspension")}>Suspend</Button>
+                      <Button type="button" size="sm" variant="destructive" disabled={actionLoading || detail.accountId === profile?.accountId} onClick={() => openRestriction(detail, "ban")}>Ban</Button>
+                      {detail.restrictionStatus !== "active" ? <Button type="button" size="sm" variant="secondary" disabled={actionLoading} onClick={() => void liftRestriction(detail)}>Lift</Button> : null}
+                    </>
                   ) : null}
-                  <div className="text-muted-foreground">Pledge: {formatMoneyCents(detail.patreon?.entitledAmountCents)}</div>
-                  <div className="text-muted-foreground">Synced: {formatAuditTimestamp(detail.patreon?.lastSyncedAt ?? undefined)}</div>
                   {canUpdatePatreon ? (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      <Button type="button" variant="secondary" onClick={() => openPatreon(detail)}>Edit tiers</Button>
-                      <Button type="button" variant="secondary" disabled={actionLoading || !detail.patreon?.linked} onClick={() => void refreshUserPatreon(detail)}>Refresh tiers</Button>
-                      {detail.patreon?.manualOverride ? <Button type="button" variant="destructive" disabled={actionLoading} onClick={() => setClearPatreonOverrideUser(detail)}>Clear override</Button> : null}
-                    </div>
+                    <>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => openPatreon(detail)}>Edit tiers</Button>
+                      <Button type="button" size="sm" variant="secondary" disabled={actionLoading || !detail.patreon?.linked} onClick={() => void refreshUserPatreon(detail)}>Refresh tiers</Button>
+                      {detail.patreon?.manualOverride ? <Button type="button" size="sm" variant="destructive" disabled={actionLoading} onClick={() => setClearPatreonOverrideUser(detail)}>Clear override</Button> : null}
+                    </>
                   ) : null}
-                </CardContent>
-              </Card>
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <CardTitle>Restriction</CardTitle>
-                      <CardDescription>{detail.restriction ? detail.restriction.reason : "No active restriction."}</CardDescription>
-                    </div>
-                    {canRestrictUsers ? (
-                      <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="secondary" disabled={actionLoading || detail.accountId === profile?.accountId} onClick={() => openRestriction(detail, "suspension")}>Suspend</Button>
-                        <Button type="button" variant="destructive" disabled={actionLoading || detail.accountId === profile?.accountId} onClick={() => openRestriction(detail, "ban")}>Ban</Button>
-                        {detail.restrictionStatus !== "active" ? <Button type="button" variant="secondary" disabled={actionLoading} onClick={() => void liftRestriction(detail)}>Lift</Button> : null}
+                </div>
+              ) : null}
+
+              <div className="grid gap-3 lg:grid-cols-2">
+                <DetailSection title="Account">
+                  <dl className="space-y-1">
+                    <DetailRow label="Photon">{detail.photonUserId ?? "—"}</DetailRow>
+                    <DetailRow label="Password">{detail.hasPassword ? "Yes" : "No"}</DetailRow>
+                    <DetailRow label="IP">{detail.creationIpAddress ?? "—"}</DetailRow>
+                    <DetailRow label="Roles">
+                      <CappedBadgeList
+                        items={sortRolesForDisplay(detail.roles)}
+                        getLabel={(role) => roleLabel(role, roles)}
+                        getVariant={roleVariant}
+                        limit={4}
+                        onClick={canManageUserRoles ? () => openAssign(detail) : undefined}
+                      />
+                    </DetailRow>
+                    <DetailRow label="Created">{formatDate(detail.createdAt)}</DetailRow>
+                    <DetailRow label="Updated">{formatDate(detail.updatedAt)}</DetailRow>
+                  </dl>
+                </DetailSection>
+
+                <DetailSection title="Patreon">
+                  <dl className="space-y-1">
+                    <DetailRow label="Status">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <StatusBadge status={detail.patreon?.linked ? "active" : "draft"}>{patreonStatusText(detail.patreon)}</StatusBadge>
+                        {detail.patreon?.manualOverride ? <Badge variant="secondary" className="text-[0.68rem]">DB override</Badge> : null}
                       </div>
-                    ) : null}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {detail.restriction ? (
-                    <div className="grid gap-2 md:grid-cols-3">
-                      <div><b>Type:</b> {detail.restriction.kind}</div>
-                      <div><b>Restricted:</b> {formatAuditTimestamp(detail.restriction.restrictedAt)}</div>
-                      <div><b>Expires:</b> {detail.restriction.expiresAt ? `${formatAuditTimestamp(detail.restriction.expiresAt)} (${restrictionCountdown(detail.restriction.expiresAt)})` : "Never"}</div>
-                    </div>
-                  ) : <p className="text-muted-foreground">Account can log in and use normal account actions.</p>}
-                </CardContent>
-              </Card>
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle>Same IP accounts</CardTitle>
-                  <CardDescription>{detail.canViewRawIp ? "Raw IP visible to admins." : "Raw IP hidden for this viewer."}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
+                    </DetailRow>
+                    <DetailRow label="Tiers">
+                      {detail.patreon?.tierIds.length ? (
+                        <div className="flex flex-wrap gap-1">
+                          {detail.patreon.tierIds.map((tierId) => <Badge key={tierId} variant="secondary" className="text-[0.68rem]">{tierId}</Badge>)}
+                        </div>
+                      ) : "—"}
+                    </DetailRow>
+                    <DetailRow label="Pledge">{formatMoneyCents(detail.patreon?.entitledAmountCents)}</DetailRow>
+                    <DetailRow label="Synced">{formatAuditTimestamp(detail.patreon?.lastSyncedAt ?? undefined)}</DetailRow>
+                  </dl>
+                </DetailSection>
+              </div>
+
+              <DetailSection title="Restriction" description={detail.restriction ? detail.restriction.reason : "No active restriction."}>
+                {detail.restriction ? (
+                  <dl className="grid gap-x-4 gap-y-1 md:grid-cols-3">
+                    <DetailRow label="Type">{detail.restriction.kind}</DetailRow>
+                    <DetailRow label="Restricted">{formatAuditTimestamp(detail.restriction.restrictedAt)}</DetailRow>
+                    <DetailRow label="Expires">{detail.restriction.expiresAt ? `${formatAuditTimestamp(detail.restriction.expiresAt)} (${shortRestrictionCountdown(detail.restriction.expiresAt)})` : "Never"}</DetailRow>
+                  </dl>
+                ) : <p className="text-xs text-muted-foreground">Account can log in and use normal account actions.</p>}
+              </DetailSection>
+
+              <DetailSection title="Same IP accounts" description={detail.canViewRawIp ? "Raw IP visible to admins." : "Raw IP hidden for this viewer."}>
+                <div className="space-y-2">
                   {detail.sameIpAccounts?.length ? detail.sameIpAccounts.map((account) => (
-                    <div key={account.accountId} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
+                    <div key={account.accountId} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
                       <button type="button" className="min-w-0 text-left" onClick={() => void viewDetails(account as ProfileResponse)}>
-                        <div className="font-semibold text-foreground">{account.displayName}</div>
-                        <div className="break-all text-xs text-muted-foreground">{account.email}</div>
+                        <div className="truncate text-sm font-semibold text-foreground">{account.displayName}</div>
+                        <div className="truncate text-xs text-muted-foreground">{account.email}</div>
                       </button>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={restrictionBadgeVariant(account.restrictionStatus)}>{restrictionLabel(account.restrictionStatus)}</Badge>
-                        {account.roles.includes("suspicion-ip") ? <Badge variant="outline">IP flag</Badge> : null}
-                        {account.roles.includes("inquire") ? <Badge variant="secondary">shared IP</Badge> : null}
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <Badge variant={restrictionBadgeVariant(account.restrictionStatus)} className="text-[0.68rem]">{restrictionLabel(account.restrictionStatus)}</Badge>
+                        {account.roles.includes("suspicion-ip") ? <Badge variant="outline" className="text-[0.68rem]">IP flag</Badge> : null}
+                        {account.roles.includes("inquire") ? <Badge variant="secondary" className="text-[0.68rem]">shared IP</Badge> : null}
                         {canRestrictUsers && account.roles.includes("suspicion-ip") ? <Button type="button" size="sm" variant="secondary" disabled={actionLoading} onClick={() => void clearAccountFlag(account as ProfileResponse, "suspicion-ip")}>Clear IP flag</Button> : null}
                       </div>
                     </div>
-                  )) : <p className="text-muted-foreground">No other accounts share this creation IP.</p>}
-                </CardContent>
-              </Card>
-              <Card className="md:col-span-2"><CardHeader><CardTitle>OAuth links</CardTitle></CardHeader><CardContent>{oauthLinks.length ? oauthLinks.map((link) => <div key={`${link.provider}-${link.providerUserId}`}>{link.provider}: {link.providerEmail ?? link.providerUserId}</div>) : "None"}</CardContent></Card>
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <CardTitle>Recent audit</CardTitle>
-                    {canReadAudits ? <Button type="button" variant="secondary" className="gap-2" onClick={openFullAuditForDetail}><FiFileText className="h-4 w-4" />View Full Audit</Button> : null}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">{recentAuditEvents.length ? recentAuditEvents.map((event) => <div key={event.id} className="flex flex-wrap items-center gap-2"><span className="tabular-nums text-muted-foreground">{formatAuditTimestamp(event.createdAt)}</span>{renderAuditActivity(event, roles, auditAccountLookup)}</div>) : "None"}</CardContent>
-              </Card>
+                  )) : <p className="text-xs text-muted-foreground">No other accounts share this creation IP.</p>}
+                </div>
+              </DetailSection>
+
+              <DetailSection title="OAuth links">
+                <div className="space-y-1 text-xs sm:text-sm">
+                  {oauthLinks.length ? oauthLinks.map((link) => (
+                    <div key={`${link.provider}-${link.providerUserId}`} className="grid grid-cols-[6rem_minmax(0,1fr)] gap-3">
+                      <span className="text-muted-foreground">{link.provider}</span>
+                      <span className="min-w-0 break-words font-medium text-foreground">{link.providerEmail ?? link.providerUserId}</span>
+                    </div>
+                  )) : <span className="text-muted-foreground">None</span>}
+                </div>
+              </DetailSection>
+
+              <DetailSection
+                title="Recent audit"
+                actions={canReadAudits ? <Button type="button" size="sm" variant="secondary" className="gap-2" onClick={openFullAuditForDetail}><FiFileText className="h-4 w-4" />View Full Audit</Button> : null}
+              >
+                <div className="space-y-2 text-xs sm:text-sm">
+                  {recentAuditEvents.length ? recentAuditEvents.map((event) => (
+                    <div key={event.id} className="flex flex-wrap items-center gap-2">
+                      <span className="tabular-nums text-muted-foreground">{formatAuditTimestamp(event.createdAt)}</span>
+                      {renderAuditActivity(event, roles, auditAccountLookup)}
+                    </div>
+                  )) : <span className="text-muted-foreground">None</span>}
+                </div>
+              </DetailSection>
             </div>
           ) : null}
         </DialogContent>
@@ -2372,5 +2575,6 @@ export default function Admin() {
 
       <ConfirmDialog open={clearPatreonOverrideUser !== null} onOpenChange={(open) => !open && setClearPatreonOverrideUser(null)} title="Clear Patreon override?" description={`Remove DB-only Patreon testing state for ${clearPatreonOverrideUser?.email ?? "this user"}. Real Patreon data will be restored only if provider tokens still prove campaign membership.`} confirmLabel="Clear override" destructive onConfirm={() => void clearPatreonOverride()} />
     </main>
+    </TooltipProvider>
   );
 }

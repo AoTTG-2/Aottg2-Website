@@ -65,4 +65,15 @@
     overflow-x: auto;
     overflow-y: hidden;
   }
+
+  .admin-users-table table {
+    min-width: 72rem;
+  }
+
+  .admin-users-table th,
+  .admin-users-table td {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    vertical-align: middle;
+  }
 }
