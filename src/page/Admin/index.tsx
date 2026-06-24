@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiFileText, FiGrid, FiHeart, FiHome, FiKey, FiMail, FiMoreHorizontal, FiSettings, FiShield, FiSlash, FiUsers } from "react-icons/fi";
 import {
@@ -774,6 +774,7 @@ export default function Admin() {
   const [patreonTiers, setPatreonTiers] = useState<PatreonTierResponse[]>([]);
   const [patreonTiersLoading, setPatreonTiersLoading] = useState(false);
   const [patreonTiersError, setPatreonTiersError] = useState("");
+  const [patreonCatalogLoaded, setPatreonCatalogLoaded] = useState(false);
   const [patreonTierLabelsJson, setPatreonTierLabelsJson] = useState("[]");
   const [patreonTierLabelsSaving, setPatreonTierLabelsSaving] = useState(false);
   const [patreonRefreshKey, setPatreonRefreshKey] = useState(0);
@@ -946,29 +947,34 @@ export default function Admin() {
     return () => controller.abort();
   }, [canReadEmails, emailLimitsRefreshKey, section]);
 
-  useEffect(() => {
-    if (!canReadPatreon || section !== "patreon") return;
-
+  const loadPatreonCatalog = useCallback(async () => {
+    if (!canReadPatreon) return;
     setPatreonTiersLoading(true);
     setPatreonTiersError("");
 
-    Promise.all([authApi.listPatreonTiers(), authApi.getPatreonTierLabels()])
-      .then(([tiersResult, labelsResult]) => {
-        if (tiersResult.ok) {
-          setPatreonTiers(Array.isArray(tiersResult.data) ? tiersResult.data : []);
-        } else {
-          setPatreonTiersError(tiersResult.data.error ?? "Could not load Patreon tiers.");
-        }
+    try {
+      const [tiersResult, labelsResult] = await Promise.all([authApi.listPatreonTiers(), authApi.getPatreonTierLabels()]);
+      if (tiersResult.ok) {
+        setPatreonTiers(Array.isArray(tiersResult.data) ? tiersResult.data : []);
+        setPatreonCatalogLoaded(true);
+      } else {
+        setPatreonTiersError(tiersResult.data.error ?? "Could not load Patreon tiers.");
+      }
 
-        if (labelsResult.ok) {
-          setPatreonTierLabelsJson(JSON.stringify(labelsResult.data.tiers ?? [], null, 2));
-        }
-      })
-      .catch((error: unknown) => {
-        setPatreonTiersError(error instanceof Error ? error.message : "Could not load Patreon tiers.");
-      })
-      .finally(() => setPatreonTiersLoading(false));
-  }, [canReadPatreon, patreonRefreshKey, section]);
+      if (labelsResult.ok) {
+        setPatreonTierLabelsJson(JSON.stringify(labelsResult.data.tiers ?? [], null, 2));
+      }
+    } catch (error: unknown) {
+      setPatreonTiersError(error instanceof Error ? error.message : "Could not load Patreon tiers.");
+    } finally {
+      setPatreonTiersLoading(false);
+    }
+  }, [canReadPatreon]);
+
+  useEffect(() => {
+    if (section !== "patreon") return;
+    void loadPatreonCatalog();
+  }, [loadPatreonCatalog, patreonRefreshKey, section]);
 
   useEffect(() => {
     if (!canReadUsers || (section !== "users" && section !== "banned")) return;
@@ -1317,7 +1323,7 @@ export default function Admin() {
     setPatreonStatusDraft(user.patreon?.patronStatus ?? "active_patron");
     setPatreonAmountDraft(user.patreon?.entitledAmountCents == null ? "" : String(user.patreon.entitledAmountCents));
     setPatreonCustomTier("");
-    if (!patreonTiers.length) refetchPatreon();
+    if ((!patreonCatalogLoaded || patreonTiersError) && !patreonTiersLoading) void loadPatreonCatalog();
   }
 
   function addCustomPatreonTier() {
@@ -2494,6 +2500,13 @@ export default function Admin() {
                 value={patreonTierDraft}
                 onChange={setPatreonTierDraft}
               />
+              {patreonTiersLoading ? <p className="text-xs text-muted-foreground">Loading Patreon tiers...</p> : null}
+              {patreonTiersError ? (
+                <div className="flex flex-wrap items-center gap-2 text-xs text-destructive">
+                  <span>{patreonTiersError}</span>
+                  <Button type="button" size="sm" variant="secondary" onClick={() => void loadPatreonCatalog()}>Retry</Button>
+                </div>
+              ) : null}
             </div>
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
               <div className="space-y-2">
