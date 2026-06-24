@@ -3,7 +3,6 @@ import type { Aottg2ThemeMode } from "@aottg2/ui";
 
 export type AccountsThemeContextValue = {
   theme: Aottg2ThemeMode;
-  toggleTheme: () => void;
 };
 
 export const AccountsThemeContext = createContext<AccountsThemeContextValue | null>(null);

@@ -34,20 +34,11 @@ function LogoutIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>;
 }
 
-function SunMoonIcon({ theme }: { theme: "light" | "dark" }) {
-  return theme === "dark" ? (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>
-  ) : (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>
-  );
-}
-
 export function AuthNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, profile, logout } = useAuth();
-  const { theme, toggleTheme } = useAccountsTheme();
-  const nextTheme = theme === "dark" ? "light" : "dark";
+  const { theme } = useAccountsTheme();
   const isAdmin = profile?.roles.includes("admin") ?? false;
   const canAccessAdmin = isAdmin || ADMIN_ACCESS_PERMISSIONS.some((permission) => profile?.permissions?.includes(permission));
   const accountsActive = location.pathname === "/accounts" || location.pathname === "/profile" || location.pathname === "/login" || location.pathname === "/admin";
@@ -82,11 +73,6 @@ export function AuthNavbar() {
     closeFocusedMenu();
     await logout();
     navigate("/login");
-  }
-
-  function switchTheme() {
-    toggleTheme();
-    closeFocusedMenu();
   }
 
   return (
@@ -137,12 +123,6 @@ export function AuthNavbar() {
                     Logout
                   </MenuItem>
                 )}
-                <div className="-mx-1 my-1 h-px bg-muted" role="separator" />
-                <div className="aottg2-emboss-bg aottg2-cta-primary -mx-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wider text-primary-foreground">Appearance</div>
-                <MenuItem onClick={switchTheme}>
-                  <Icon><SunMoonIcon theme={nextTheme} /></Icon>
-                  Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode
-                </MenuItem>
               </div>
             </div>
           </div>

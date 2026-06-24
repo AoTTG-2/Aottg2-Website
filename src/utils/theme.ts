@@ -1,19 +1,8 @@
-import type { Aottg2ThemeMode } from "@aottg2/ui";
-
 export const THEME_STORAGE_KEY = "aottg2_accounts_theme";
 
-export function getInitialTheme(): Aottg2ThemeMode {
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === "dark" || stored === "light") return stored;
-
-  const theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  return theme;
-}
-
-export function saveTheme(theme: Aottg2ThemeMode) {
-  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  document.documentElement.dataset.theme = theme;
-  document.documentElement.classList.toggle("dark", theme === "dark");
-  document.documentElement.classList.toggle("light", theme === "light");
+export function saveTheme() {
+  window.localStorage.setItem(THEME_STORAGE_KEY, "dark");
+  document.documentElement.dataset.theme = "dark";
+  document.documentElement.classList.add("dark");
+  document.documentElement.classList.remove("light");
 }

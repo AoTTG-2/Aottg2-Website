@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Aottg2Theme, Toaster, type Aottg2ThemeMode } from "@aottg2/ui";
-import { getInitialTheme, saveTheme } from "../../utils/theme";
+import { saveTheme } from "../../utils/theme";
 import { AccountsThemeContext } from "./accounts-theme-context";
 
 const wallpapers = [
@@ -21,11 +21,11 @@ interface AccountsThemeProps {
 
 export function AccountsTheme({ children, plain = false }: AccountsThemeProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [theme, setTheme] = useState<Aottg2ThemeMode>(getInitialTheme);
+  const theme: Aottg2ThemeMode = "dark";
 
   useEffect(() => {
-    saveTheme(theme);
-  }, [theme]);
+    saveTheme();
+  }, []);
 
   useEffect(() => {
     if (plain) return undefined;
@@ -53,7 +53,6 @@ export function AccountsTheme({ children, plain = false }: AccountsThemeProps) {
   const value = useMemo(
     () => ({
       theme,
-      toggleTheme: () => setTheme((current) => (current === "dark" ? "light" : "dark")),
     }),
     [theme],
   );

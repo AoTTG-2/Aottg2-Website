@@ -1,13 +1,10 @@
-import React, { useEffect, useState, type ReactNode } from "react";
+import React, { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Aottg2LogoLight, cn } from "@aottg2/ui";
-import NavbarTexture from "../../assets/images/bg-light.webp";
-import Logo from "../../assets/images/navbar-image.webp";
 import { ADMIN_ACCESS_PERMISSIONS } from "../../auth/adminPermissions";
 import { useAuth } from "../../auth/useAuth";
 import { NAVBAR_HEIGHT_CLASS, NAVBAR_LOGO_HEIGHT_CLASS } from "../../data/layout";
-import { getInitialTheme, saveTheme } from "../../utils/theme";
 import useBreakpoint from "../../utils/useBreakpoint";
 
 interface NavbarProps {
@@ -52,19 +49,13 @@ function LogoutIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></svg>;
 }
 
-function SunMoonIcon({ theme }: { theme: "light" | "dark" }) {
-  return theme === "dark" ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg> : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" /></svg>;
-}
-
 const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">(getInitialTheme);
   const isMobile = useBreakpoint(768);
   const { isAuthenticated, profile, logout } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
-  const nextTheme = theme === "dark" ? "light" : "dark";
   const isAdmin = profile?.roles.includes("admin") ?? false;
   const canAccessAdmin = isAdmin || ADMIN_ACCESS_PERMISSIONS.some((permission) => profile?.permissions?.includes(permission));
   const accountLabel = isAuthenticated ? profile?.displayName ?? "ACCOUNTS" : "ACCOUNTS";
@@ -76,18 +67,8 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
     { name: "PLAY", id: "home" },
   ];
 
-  useEffect(() => {
-    saveTheme(theme);
-  }, [theme]);
-
   function closeFocusedMenu() {
     (document.activeElement as HTMLElement | null)?.blur();
-  }
-
-  function toggleTheme() {
-    setTheme((current) => (current === "dark" ? "light" : "dark"));
-    closeFocusedMenu();
-    setIsMenuOpen(false);
   }
 
   function goSettings() {
@@ -130,16 +111,10 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
   return (
     <motion.div className="fixed top-0 z-[1000] w-full">
       <div
-        className={`w-full ${NAVBAR_HEIGHT_CLASS} px-4 md:px-8 z-50 flex justify-between items-center relative overflow-hidden shadow-lg ${theme === "dark" ? "bg-neutral-950 text-white" : "text-black"}`}
-        style={{
-          backgroundImage: theme === "light" ? `url(${NavbarTexture})` : "none",
-          backgroundRepeat: "repeat-x",
-          backgroundSize: "auto 100%",
-          backgroundPosition: "center",
-        }}
+        className={`w-full ${NAVBAR_HEIGHT_CLASS} px-4 md:px-8 z-50 flex justify-between items-center relative overflow-hidden bg-neutral-950 text-white shadow-lg`}
       >
         <img
-          src={theme === "dark" ? Aottg2LogoLight : Logo}
+          src={Aottg2LogoLight}
           className={`${NAVBAR_LOGO_HEIGHT_CLASS} w-auto flex-shrink-0 object-contain cursor-pointer`}
           alt="AoTTG 2 home"
           width="453"
@@ -170,15 +145,12 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
                   <span className="truncate">{accountLabel}</span>
                 </button>
                 <div className="invisible fixed right-4 top-9 z-[1100] w-56 pt-1 opacity-0 transition-[opacity,visibility] duration-150 ease-out group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 lg:right-8">
-                  <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content min-w-32 overflow-hidden rounded-none bg-popover p-1 text-popover-foreground shadow-md", theme)}>
+                  <div role="menu" className={cn("aottg2-theme aottg2-palette-website aottg2-menu-content dark min-w-32 overflow-hidden rounded-none bg-popover p-1 text-popover-foreground shadow-md")}>
                     <div className="aottg2-emboss-bg aottg2-cta-primary -mx-1 -mt-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wider text-primary-foreground">Account</div>
                     {isAuthenticated && <AccountMenuItem onClick={goProfile}><Icon><UserIcon /></Icon>Profile</AccountMenuItem>}
                     <AccountMenuItem onClick={goSettings}><Icon>{isAuthenticated ? <SettingsIcon /> : <UserIcon />}</Icon>{isAuthenticated ? "Settings" : "Login"}</AccountMenuItem>
                     {canAccessAdmin && <AccountMenuItem onClick={goAdmin}><Icon><SettingsIcon /></Icon>Admin Panel</AccountMenuItem>}
                     {isAuthenticated && <AccountMenuItem onClick={handleLogout}><Icon><LogoutIcon /></Icon>Logout</AccountMenuItem>}
-                    <div className="-mx-1 my-1 h-px bg-muted" role="separator" />
-                    <div className="aottg2-emboss-bg aottg2-cta-primary -mx-1 mb-1 px-3 py-2 font-primary text-xs uppercase leading-none tracking-wider text-primary-foreground">Appearance</div>
-                    <AccountMenuItem onClick={toggleTheme}><Icon><SunMoonIcon theme={nextTheme} /></Icon>Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode</AccountMenuItem>
                   </div>
                 </div>
               </div>
@@ -192,7 +164,7 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: isMenuOpen ? "auto" : 0, opacity: isMenuOpen ? 1 : 0 }}
           transition={{ duration: 0.3 }}
-          className={`${theme === "dark" ? "bg-neutral-950" : "bg-[#111111]"} text-white overflow-hidden font-primary`}
+          className="overflow-hidden bg-neutral-950 font-primary text-white"
         >
           {menuItems.map((item) => (
             <button key={item.name} onClick={() => item.id && scrollToSection(item.id)} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">
@@ -203,7 +175,6 @@ const Navbar: React.FC<NavbarProps> = ({ refs }) => {
           {SHOW_LOGIN_NAV && <button onClick={goSettings} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Settings</button>}
           {canAccessAdmin && <button onClick={goAdmin} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">⚙ Admin Panel</button>}
           {isAuthenticated && <button onClick={handleLogout} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">↪ Logout</button>}
-          <button onClick={toggleTheme} className="w-full p-4 text-left transition-colors duration-300 hover:bg-gray-800">Switch to {nextTheme === "dark" ? "Dark" : "Light"} Mode</button>
         </motion.div>
       )}
     </motion.div>
