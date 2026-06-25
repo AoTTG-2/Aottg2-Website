@@ -1,6 +1,6 @@
 import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@aottg2/ui";
 import type { AdminAccountDetailResponse, PatreonTierResponse, ProfileResponse } from "../../../auth/types";
-import { ADMIN_DIALOG_SCROLL_CLASS } from "../constants";
+import { ADMIN_DIALOG_SCROLL_CLASS, ADMIN_PORTAL_CONTENT_CLASS } from "../constants";
 import type { BadgeVariant, MultiSelectItem } from "../types";
 import { formatMoneyCents } from "../utils/format";
 import { PillMultiSelect } from "./PillMultiSelect";
@@ -88,7 +88,7 @@ export function PatreonUserDialog({
               <Label htmlFor="patreonStatus">Status</Label>
               <Select value={statusDraft} onValueChange={onStatusDraft}>
                 <SelectTrigger id="patreonStatus"><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className={ADMIN_PORTAL_CONTENT_CLASS}>
                   <SelectItem value="active_patron">active_patron</SelectItem>
                   <SelectItem value="declined_patron">declined_patron</SelectItem>
                   <SelectItem value="former_patron">former_patron</SelectItem>

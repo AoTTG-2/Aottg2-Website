@@ -1,6 +1,7 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, DataTable, EmptyState, FilterBar, Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, SearchInput, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Spinner } from "@aottg2/ui";
 import type { AdminAccountFilters, AdminRestrictionStatusFilter, ProfileResponse, RoleResponse } from "../../../auth/types";
+import { ADMIN_PORTAL_CONTENT_CLASS } from "../constants";
 import { UserFilterSettings } from "../UserFilterSettings";
 
 type UserColumn = {
@@ -83,7 +84,7 @@ export function UsersSection({
               <UserFilterSettings roles={roles} value={userFilters} onApply={onApplyUserFilters} onReset={onResetUserFilters} />
               <Select value={String(pageSize)} onValueChange={(value) => { onPageSize(Number(value)); onPage(1); }}>
                 <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className={ADMIN_PORTAL_CONTENT_CLASS}>
                   {[20, 50, 100].map((size) => <SelectItem key={size} value={String(size)}>{size} / page</SelectItem>)}
                 </SelectContent>
               </Select>

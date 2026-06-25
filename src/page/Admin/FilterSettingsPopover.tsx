@@ -7,6 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@aottg2/ui";
+import { ADMIN_PORTAL_CONTENT_CLASS } from "./constants";
 
 type FilterSettingsPopoverProps = {
   activeCount: number;
@@ -38,7 +39,7 @@ export function FilterSettingsPopover({
           {activeCount ? <Badge variant="textured" className="ml-1 tabular-nums">{activeCount}</Badge> : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] border-border bg-card p-0 text-card-foreground shadow-xl">
+      <PopoverContent align="start" className={`${ADMIN_PORTAL_CONTENT_CLASS} w-[min(24rem,calc(100vw-2rem))] border-border bg-card p-0 text-card-foreground shadow-xl`}>
         <div className="space-y-4 p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">

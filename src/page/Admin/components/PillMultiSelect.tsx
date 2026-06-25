@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Badge, Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, Popover, PopoverContent, PopoverTrigger } from "@aottg2/ui";
 import type { PermissionResponse, RoleResponse } from "../../../auth/types";
+import { ADMIN_PORTAL_CONTENT_CLASS } from "../constants";
 import type { BadgeVariant, MultiSelectItem } from "../types";
 import { roleLabel, roleVariant } from "../utils/roles";
 
@@ -63,7 +64,7 @@ export function PillMultiSelect({
           }) : <span className="text-muted-foreground">{emptyText}</span>}
         </div>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] min-w-80 p-0">
+      <PopoverContent align="start" className={`${ADMIN_PORTAL_CONTENT_CLASS} w-[var(--radix-popover-trigger-width)] min-w-80 p-0`}>
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>

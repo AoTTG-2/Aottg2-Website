@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@aottg2/ui";
 import type { ProfileResponse } from "../../../auth/types";
-import { ADMIN_DIALOG_SCROLL_CLASS } from "../constants";
+import { ADMIN_DIALOG_SCROLL_CLASS, ADMIN_PORTAL_CONTENT_CLASS } from "../constants";
 
 export function EditUserDialog({
   actionLoading,
@@ -30,7 +30,7 @@ export function EditUserDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2"><Label htmlFor="displayName">Display name</Label><Input id="displayName" value={name} onChange={(event) => onName(event.target.value)} /></div>
-          <div className="space-y-2"><Label>Email status</Label><Select value={String(verified)} onValueChange={(value) => onVerified(value === "true")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="true">Verified</SelectItem><SelectItem value="false">Unverified</SelectItem></SelectContent></Select></div>
+          <div className="space-y-2"><Label>Email status</Label><Select value={String(verified)} onValueChange={(value) => onVerified(value === "true")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent className={ADMIN_PORTAL_CONTENT_CLASS}><SelectItem value="true">Verified</SelectItem><SelectItem value="false">Unverified</SelectItem></SelectContent></Select></div>
         </div>
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={() => onUser(null)}>Cancel</Button>

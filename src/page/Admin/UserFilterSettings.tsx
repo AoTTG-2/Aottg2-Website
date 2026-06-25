@@ -13,6 +13,7 @@ import {
   Separator,
 } from "@aottg2/ui";
 import type { AdminAccountFilters, AdminEmailVerifiedFilter, AdminRestrictionStatusFilter, RoleResponse } from "../../auth/types";
+import { ADMIN_PORTAL_CONTENT_CLASS } from "./constants";
 import { FilterSettingsPopover } from "./FilterSettingsPopover";
 import { countUserFilters, EMPTY_USER_FILTERS, normalizeUserFilters } from "./userFilters";
 
@@ -92,7 +93,7 @@ export function UserFilterSettings({ roles, value, onApply, onReset }: UserFilte
               }))}
             >
               <SelectTrigger id="admin-filter-email-status"><SelectValue /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className={ADMIN_PORTAL_CONTENT_CLASS}>
                 <SelectItem value="any">Any status</SelectItem>
                 <SelectItem value="verified">Verified</SelectItem>
                 <SelectItem value="unverified">Unverified</SelectItem>
@@ -110,7 +111,7 @@ export function UserFilterSettings({ roles, value, onApply, onReset }: UserFilte
               }))}
             >
               <SelectTrigger id="admin-filter-restriction-status"><SelectValue /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className={ADMIN_PORTAL_CONTENT_CLASS}>
                 <SelectItem value="any">Any status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="restricted">Banned or suspended</SelectItem>

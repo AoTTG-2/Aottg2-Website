@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@aottg2/ui";
-import { ADMIN_DIALOG_SCROLL_CLASS } from "../constants";
+import { ADMIN_DIALOG_SCROLL_CLASS, ADMIN_PORTAL_CONTENT_CLASS } from "../constants";
 import type { AdminUserLike, RestrictionKindDraft } from "../types";
 
 export function RestrictionDialog({
@@ -37,7 +37,7 @@ export function RestrictionDialog({
             <Label htmlFor="restriction-kind">Action</Label>
             <Select value={kind} onValueChange={(value) => onKind(value as RestrictionKindDraft)}>
               <SelectTrigger id="restriction-kind"><SelectValue /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className={ADMIN_PORTAL_CONTENT_CLASS}>
                 <SelectItem value="suspension">Suspend with expiry</SelectItem>
                 <SelectItem value="ban">Ban until lifted</SelectItem>
               </SelectContent>

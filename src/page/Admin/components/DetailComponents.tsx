@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Badge, Card, CardContent, Tooltip, TooltipContent, TooltipTrigger } from "@aottg2/ui";
+import { ADMIN_PORTAL_CONTENT_CLASS } from "../constants";
 import type { BadgeVariant } from "../types";
 
 export function CappedBadgeList({
@@ -34,7 +35,7 @@ export function CappedBadgeList({
             <span className="shrink-0">{badge}</span>
           )}
         </TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
+        <TooltipContent className={ADMIN_PORTAL_CONTENT_CLASS}>{tooltip}</TooltipContent>
       </Tooltip>
     );
   };
@@ -53,7 +54,7 @@ export function TooltipText({ className = "", value }: { className?: string; val
       <TooltipTrigger asChild>
         <span className={`block truncate ${className}`}>{value}</span>
       </TooltipTrigger>
-      <TooltipContent>{value}</TooltipContent>
+      <TooltipContent className={ADMIN_PORTAL_CONTENT_CLASS}>{value}</TooltipContent>
     </Tooltip>
   );
 }
@@ -64,7 +65,7 @@ export function TooltipBadge({ children, tooltip }: { children: ReactNode; toolt
       <TooltipTrigger asChild>
         <span className="inline-flex">{children}</span>
       </TooltipTrigger>
-      <TooltipContent>{tooltip}</TooltipContent>
+      <TooltipContent className={ADMIN_PORTAL_CONTENT_CLASS}>{tooltip}</TooltipContent>
     </Tooltip>
   );
 }
