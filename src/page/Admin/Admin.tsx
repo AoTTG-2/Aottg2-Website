@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiGrid, FiHeart, FiKey, FiMail, FiShield, FiSlash, FiUsers } from "react-icons/fi";
+import { FiFileText, FiGrid, FiHeart, FiKey, FiLogIn, FiMail, FiShield, FiSlash, FiUsers } from "react-icons/fi";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Spinner, TooltipProvider } from "@aottg2/ui";
 import { useAuth } from "../../auth/useAuth";
 import { AdminConfirmDialogs } from "./components/AdminConfirmDialogs";
@@ -13,6 +13,7 @@ import { RoleDialog } from "./components/RoleDialog";
 import { UserDetailDialog } from "./components/UserDetailDialog";
 import { useAccountActions } from "./hooks/useAccountActions";
 import { useAdminAudits } from "./hooks/useAdminAudits";
+import { useAdminAuthMethods } from "./hooks/useAdminAuthMethods";
 import { useAdminCatalogs } from "./hooks/useAdminCatalogs";
 import { useAdminPermissions } from "./hooks/useAdminPermissions";
 import { useAdminUsers } from "./hooks/useAdminUsers";
@@ -21,6 +22,7 @@ import { usePatreonCatalog } from "./hooks/usePatreonCatalog";
 import { useRoleActions } from "./hooks/useRoleActions";
 import { useUserColumns } from "./hooks/useUserColumns";
 import { useUserPatreonActions } from "./hooks/useUserPatreonActions";
+import { AuthMethodsSection } from "./sections/AuthMethodsSection";
 import { AuditsSection } from "./sections/AuditsSection";
 import { EmailSection } from "./sections/EmailSection";
 import { OverviewSection } from "./sections/OverviewSection";
@@ -44,6 +46,7 @@ export default function Admin() {
     { id: "permissions", label: "Permissions", icon: <FiKey />, visible: permissions.canReadPermissions },
     { id: "audits", label: "Audit logs", icon: <FiFileText />, visible: permissions.canReadAudits },
     { id: "emails", label: "Email Service", icon: <FiMail />, visible: permissions.canReadEmails },
+    { id: "auth-methods", label: "Auth methods", icon: <FiLogIn />, visible: permissions.canReadAuthMethods },
     { id: "patreon", label: "Patreon", icon: <FiHeart />, visible: permissions.canReadPatreon },
   ], [permissions]);
   const visibleSectionItems = useMemo(() => sectionItems.filter((item) => item.visible), [sectionItems]);
@@ -52,6 +55,7 @@ export default function Admin() {
   const users = useAdminUsers(permissions.canReadUsers, section);
   const audits = useAdminAudits(permissions.canReadAudits, permissions.canReadUsers, section);
   const email = useEmailLimits(permissions.canReadEmails, permissions.canUpdateEmails, permissions.canReadAudits, section, audits.refetchAudits);
+  const authMethods = useAdminAuthMethods(permissions.canReadAuthMethods, permissions.canUpdateAuthMethods, permissions.canReadAudits, section, audits.refetchAudits);
   const patreonCatalog = usePatreonCatalog(permissions.canReadPatreon, permissions.canUpdatePatreon, permissions.canReadAudits, section, audits.refetchAudits);
   const roleActions = useRoleActions(permissions.canUpdateRolePermissions, catalogs.refetchRoles);
   const accountActions = useAccountActions({
@@ -139,6 +143,7 @@ export default function Admin() {
             {section === "roles" ? <RolesSection roles={catalogs.roles} rolesLoading={catalogs.rolesLoading} rolesError={catalogs.rolesError} onRefresh={catalogs.refetchRoles} canCreateRoles={permissions.canCreateRoles} canUpdateRoles={permissions.canUpdateRoles} canUpdateSystemRoles={permissions.canUpdateSystemRoles} canDeleteRoles={permissions.canDeleteRoles} canDeleteSystemRoles={permissions.canDeleteSystemRoles} canReadRolePermissions={permissions.canReadRolePermissions} onCreateRole={roleActions.openCreateRole} onEditRole={roleActions.openEditRole} onDeleteRole={roleActions.setDeleteRoleTarget} /> : null}
             {section === "permissions" ? <PermissionsSection permissions={catalogs.permissions} permissionsLoading={catalogs.permissionsLoading} permissionsError={catalogs.permissionsError} onRefresh={catalogs.refetchPermissions} /> : null}
             {section === "emails" ? <EmailSection canUpdateEmails={permissions.canUpdateEmails} dailyIpLimit={email.dailyIpLimit} dailyRecipientLimit={email.dailyRecipientLimit} dailyResetHourUtc={email.dailyResetHourUtc} emailLimits={email.emailLimits} emailLimitsError={email.emailLimitsError} emailLimitsLoading={email.emailLimitsLoading} emailLimitsSaving={email.emailLimitsSaving} monthlyHardLimit={email.monthlyHardLimit} monthlyResetDay={email.monthlyResetDay} onDailyIpLimit={email.setDailyIpLimit} onDailyRecipientLimit={email.setDailyRecipientLimit} onDailyResetHourUtc={email.setDailyResetHourUtc} onMonthlyHardLimit={email.setMonthlyHardLimit} onMonthlyResetDay={email.setMonthlyResetDay} onRefresh={email.refetchEmailLimits} onSave={() => void email.saveEmailLimits()} /> : null}
+            {section === "auth-methods" ? <AuthMethodsSection canUpdate={permissions.canUpdateAuthMethods} draft={authMethods.draft} error={authMethods.error} loading={authMethods.loading} saving={authMethods.saving} onRefresh={authMethods.refresh} onSave={() => void authMethods.save()} onSetEnabled={authMethods.setEnabled} /> : null}
             {section === "patreon" ? <PatreonSection canUpdatePatreon={permissions.canUpdatePatreon} labelsJson={patreonCatalog.patreonTierLabelsJson} labelsSaving={patreonCatalog.patreonTierLabelsSaving} onLabelsJson={patreonCatalog.setPatreonTierLabelsJson} onRefresh={patreonCatalog.refetchPatreon} onSaveLabels={() => void patreonCatalog.savePatreonTierLabels()} tiers={patreonCatalog.patreonTiers} tiersError={patreonCatalog.patreonTiersError} tiersLoading={patreonCatalog.patreonTiersLoading} /> : null}
             {section === "audits" ? <AuditsSection accountFilter={audits.auditAccountFilter} accountLookup={audits.auditAccountLookup} auditViewMode={audits.auditViewMode} auditsError={audits.auditsError} auditsLoading={audits.auditsLoading} auditsPage={audits.auditsPage} auditsPageCount={audits.auditsPageCount} auditsPageSize={audits.auditsPageSize} auditsTotal={audits.auditsTotal} eventType={audits.auditEventType} events={audits.auditEvents} loadingUserSearch={audits.auditUserSearchLoading} onApplyUserSearch={audits.applyAuditAccountSearch} onEventType={audits.setAuditEventType} onPage={audits.setAuditsPage} onPageSize={audits.setAuditsPageSize} onRefresh={audits.refetchAudits} onResetFilters={audits.resetAuditFilters} onViewMode={audits.setAuditViewMode} roles={catalogs.roles} userSearch={audits.auditUserSearch} /> : null}
           </section>

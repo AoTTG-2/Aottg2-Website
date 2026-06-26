@@ -63,7 +63,7 @@ async function refreshSession(): Promise<boolean> {
   return true;
 }
 
-async function request<T = unknown>(
+export async function request<T = unknown>(
   path: string,
   init: RequestInit = {},
   retry = true,
@@ -287,16 +287,13 @@ export const authApi = {
 
   assignRole: (id: string, roleName: string) =>
     request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/roles/${encodeURIComponent(roleName)}`, { method: "PUT" }),
-
   removeRole: (id: string, roleName: string) =>
     request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/roles/${encodeURIComponent(roleName)}`, { method: "DELETE" }),
 
   grantTrusted: (id: string) =>
     request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/trusted`, { method: "PUT" }),
-
   revokeTrusted: (id: string) =>
     request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/trusted`, { method: "DELETE" }),
-
   deleteAdminAccount: (id: string) =>
     request<{ deleted?: string } & ErrorResponse>(`/admin/accounts/${id}`, { method: "DELETE" }),
 };

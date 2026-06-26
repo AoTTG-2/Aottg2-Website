@@ -1,7 +1,9 @@
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { authApi } from "../../auth/api";
-import { Button, Input, Label } from "@aottg2/ui";
+import { enabledOAuthProviders, isAuthMethodEnabled } from "../../auth/authMethods";
+import { usePublicAuthMethods } from "../../auth/usePublicAuthMethods";
+import { Button, EmptyState, Input, Label, Spinner } from "@aottg2/ui";
 import { AuthShell, ErrorMessage, SuccessMessage } from "../Auth/AuthShell";
 import { OAuthButtons, OAuthDivider } from "../Auth/OAuthButtons";
 
@@ -13,6 +15,10 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const authMethods = usePublicAuthMethods();
+  const emailEnabled = isAuthMethodEnabled(authMethods.methods, "email_password");
+  const oauthProviders = enabledOAuthProviders(authMethods.methods);
+  const hasOAuth = oauthProviders.length > 0;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,10 +71,18 @@ export default function Register() {
 
   return (
     <AuthShell title="Create account" subtitle="Create an AOTTG2 account or continue with OAuth.">
-      <OAuthButtons disabled={isSubmitting} onError={setError} />
-      <OAuthDivider />
+      {authMethods.loading ? (
+        <div className="py-10"><Spinner label="Loading account options" /></div>
+      ) : !emailEnabled && !hasOAuth ? (
+        <EmptyState title="Account creation unavailable" description={authMethods.error || "All sign-in methods are currently disabled."} />
+      ) : (
+        <>
+          {hasOAuth ? <OAuthButtons disabled={isSubmitting} enabledProviders={oauthProviders} onError={setError} /> : null}
+          {hasOAuth && emailEnabled ? <OAuthDivider /> : null}
+        </>
+      )}
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      {emailEnabled && !authMethods.loading ? <form className="space-y-5" onSubmit={handleSubmit}>
         <div className="space-y-2">
           <Label htmlFor="register-email">Email address</Label>
           <Input
@@ -128,7 +142,7 @@ export default function Register() {
         <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting ? "Creating account…" : "Create account"}
         </Button>
-      </form>
+      </form> : null}
 
       <p className="mt-6 text-center text-sm font-medium text-muted-foreground">
         Already have an account?{" "}

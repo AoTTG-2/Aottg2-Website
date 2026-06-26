@@ -1,9 +1,11 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authApi } from "../../auth/api";
+import { enabledOAuthProviders, isAuthMethodEnabled } from "../../auth/authMethods";
 import { buildWorkshopCallbackUrl, getLoginNext } from "../../auth/loginRedirect";
+import { usePublicAuthMethods } from "../../auth/usePublicAuthMethods";
 import { useAuth } from "../../auth/useAuth";
-import { Button, Input, Label } from "@aottg2/ui";
+import { Button, EmptyState, Input, Label, Spinner } from "@aottg2/ui";
 import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
 import { OAuthButtons, OAuthDivider } from "../Auth/OAuthButtons";
 
@@ -16,7 +18,11 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState(searchParams.get("error") ?? "");
+  const authMethods = usePublicAuthMethods();
   const loginNext = useMemo(() => getLoginNext(searchParams.get("next")), [searchParams]);
+  const emailEnabled = isAuthMethodEnabled(authMethods.methods, "email_password");
+  const oauthProviders = enabledOAuthProviders(authMethods.methods);
+  const hasOAuth = oauthProviders.length > 0;
 
   const finishLogin = useCallback(async (replace = false) => {
     if (loginNext?.kind === "workshop") {
@@ -62,10 +68,18 @@ export default function Login() {
 
   return (
     <AuthShell title="Sign in" subtitle="Sign in to your AOTTG2 account.">
-      <OAuthButtons disabled={isSubmitting || isLoading || isRedirecting} onError={setError} returnTo={loginNext} />
-      <OAuthDivider />
+      {authMethods.loading ? (
+        <div className="py-10"><Spinner label="Loading sign-in options" /></div>
+      ) : !emailEnabled && !hasOAuth ? (
+        <EmptyState title="Sign-in unavailable" description={authMethods.error || "All sign-in methods are currently disabled."} />
+      ) : (
+        <>
+          {hasOAuth ? <OAuthButtons disabled={isSubmitting || isLoading || isRedirecting} enabledProviders={oauthProviders} onError={setError} returnTo={loginNext} /> : null}
+          {hasOAuth && emailEnabled ? <OAuthDivider /> : null}
+        </>
+      )}
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      {emailEnabled && !authMethods.loading ? <form className="space-y-5" onSubmit={handleSubmit}>
         <div className="space-y-2">
           <Label htmlFor="email">Email address</Label>
           <Input
@@ -102,9 +116,9 @@ export default function Login() {
         >
           {isRedirecting ? "Opening Workshop…" : isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
-      </form>
+      </form> : null}
 
-      <div className="mt-6 flex flex-wrap justify-between gap-3 text-sm font-medium text-muted-foreground">
+      {emailEnabled ? <div className="mt-6 flex flex-wrap justify-between gap-3 text-sm font-medium text-muted-foreground">
         <span>
           No account?{" "}
           <Button asChild variant="link" className="h-auto p-0 text-foreground normal-case tracking-normal">
@@ -114,7 +128,7 @@ export default function Login() {
         <Button asChild variant="link" className="h-auto p-0 text-foreground normal-case tracking-normal">
           <Link to="/forgot-password">Forgot password?</Link>
         </Button>
-      </div>
+      </div> : null}
     </AuthShell>
   );
 }

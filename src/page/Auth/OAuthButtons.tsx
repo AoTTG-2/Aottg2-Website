@@ -37,11 +37,12 @@ function GoogleIcon() {
 
 interface OAuthButtonsProps {
   disabled?: boolean;
+  enabledProviders?: OAuthProvider[];
   onError: (message: string) => void;
   returnTo?: LoginNext | null;
 }
 
-export function OAuthButtons({ disabled = false, onError, returnTo = null }: OAuthButtonsProps) {
+export function OAuthButtons({ disabled = false, enabledProviders = ["discord", "google"], onError, returnTo = null }: OAuthButtonsProps) {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(null);
 
   async function handleOAuth(provider: OAuthProvider) {
@@ -64,28 +65,36 @@ export function OAuthButtons({ disabled = false, onError, returnTo = null }: OAu
     }
   }
 
+  const showDiscord = enabledProviders.includes("discord");
+  const showGoogle = enabledProviders.includes("google");
+  if (!showDiscord && !showGoogle) return null;
+
   return (
     <div className="space-y-3">
-      <Button
-        type="button"
-        variant="secondary"
-        size="account"
-        disabled={disabled || loadingProvider !== null}
-        onClick={() => handleOAuth("discord")}
-      >
-        <DiscordIcon />
-        {loadingProvider === "discord" ? "Redirecting…" : "Continue with Discord"}
-      </Button>
-      <Button
-        type="button"
-        size="account"
-        className="bg-[#2f6fd6] text-white hover:bg-[#2f6fd6]/90"
-        disabled={disabled || loadingProvider !== null}
-        onClick={() => handleOAuth("google")}
-      >
-        <GoogleIcon />
-        {loadingProvider === "google" ? "Redirecting…" : "Continue with Google"}
-      </Button>
+      {showDiscord ? (
+        <Button
+          type="button"
+          variant="secondary"
+          size="account"
+          disabled={disabled || loadingProvider !== null}
+          onClick={() => handleOAuth("discord")}
+        >
+          <DiscordIcon />
+          {loadingProvider === "discord" ? "Redirecting…" : "Continue with Discord"}
+        </Button>
+      ) : null}
+      {showGoogle ? (
+        <Button
+          type="button"
+          size="account"
+          className="bg-[#2f6fd6] text-white hover:bg-[#2f6fd6]/90"
+          disabled={disabled || loadingProvider !== null}
+          onClick={() => handleOAuth("google")}
+        >
+          <GoogleIcon />
+          {loadingProvider === "google" ? "Redirecting…" : "Continue with Google"}
+        </Button>
+      ) : null}
     </div>
   );
 }

@@ -5,5 +5,6 @@ export const ADMIN_ACCESS_PERMISSIONS = [
   "audits.read",
   "audits.moderation.read",
   "emails.read",
+  "auth_methods.read",
   "patreon.read",
 ] as const;

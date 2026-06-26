@@ -34,6 +34,8 @@ export function useAdminPermissions(profile: ProfileResponse | null): AdminPermi
       canReadAudits: can("audits.read"),
       canReadEmails: can("emails.read"),
       canUpdateEmails: isAdmin && can("emails.update"),
+      canReadAuthMethods: isAdmin && can("auth_methods.read"),
+      canUpdateAuthMethods: isAdmin && can("auth_methods.update"),
       canReadPatreon: isAdmin && can("patreon.read"),
       canUpdatePatreon: isAdmin && can("patreon.update"),
     };

@@ -146,6 +146,25 @@ export interface EmailLimitStatusResponse {
   recentDays: EmailLimitDailyUsageResponse[];
 }
 
+export type AuthMethodKey = "email_password" | "discord" | "google";
+
+export interface AuthMethodResponse {
+  key: AuthMethodKey;
+  label: string;
+  enabled: boolean;
+}
+
+export interface AuthMethodsResponse {
+  methods: AuthMethodResponse[];
+}
+
+export interface UpdateAuthMethodsRequest {
+  methods: Array<{
+    key: AuthMethodKey;
+    enabled: boolean;
+  }>;
+}
+
 export interface OAuthLinkResponse {
   provider: string;
   providerUserId: string;
