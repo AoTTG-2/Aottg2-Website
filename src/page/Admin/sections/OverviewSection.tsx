@@ -10,6 +10,7 @@ export function OverviewSection({ permissions, profile, onSection }: { permissio
     { title: "Permissions", description: "Read backend permission catalog.", section: "permissions" as AdminSection, visible: permissions.canReadPermissions },
     { title: "Audit logs", description: "Review account and admin audit events.", section: "audits" as AdminSection, visible: permissions.canReadAudits },
     { title: "Email Service", description: "Monitor SES usage and quota settings.", section: "emails" as AdminSection, visible: permissions.canReadEmails },
+    { title: "Credits", description: "Manage public credits categories.", section: "credits" as AdminSection, visible: permissions.canReadCredits },
     { title: "Patreon", description: "Review live tiers and fallback labels.", section: "patreon" as AdminSection, visible: permissions.canReadPatreon },
   ].filter((item) => item.visible);
 

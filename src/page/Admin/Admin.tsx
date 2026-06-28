@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiFileText, FiGrid, FiHeart, FiKey, FiLogIn, FiMail, FiShield, FiSlash, FiUsers } from "react-icons/fi";
+import { FiAward, FiFileText, FiGrid, FiHeart, FiKey, FiLogIn, FiMail, FiShield, FiSlash, FiUsers } from "react-icons/fi";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Spinner, TooltipProvider } from "@aottg2/ui";
 import { useAuth } from "../../auth/useAuth";
 import { AdminConfirmDialogs } from "./components/AdminConfirmDialogs";
@@ -15,6 +15,7 @@ import { useAccountActions } from "./hooks/useAccountActions";
 import { useAdminAudits } from "./hooks/useAdminAudits";
 import { useAdminAuthMethods } from "./hooks/useAdminAuthMethods";
 import { useAdminCatalogs } from "./hooks/useAdminCatalogs";
+import { useAdminCredits } from "./hooks/useAdminCredits";
 import { useAdminPermissions } from "./hooks/useAdminPermissions";
 import { useAdminUsers } from "./hooks/useAdminUsers";
 import { useEmailLimits } from "./hooks/useEmailLimits";
@@ -24,6 +25,7 @@ import { useUserColumns } from "./hooks/useUserColumns";
 import { useUserPatreonActions } from "./hooks/useUserPatreonActions";
 import { AuthMethodsSection } from "./sections/AuthMethodsSection";
 import { AuditsSection } from "./sections/AuditsSection";
+import { CreditsSection } from "./sections/CreditsSection";
 import { EmailSection } from "./sections/EmailSection";
 import { OverviewSection } from "./sections/OverviewSection";
 import { PatreonSection } from "./sections/PatreonSection";
@@ -47,6 +49,7 @@ export default function Admin() {
     { id: "audits", label: "Audit logs", icon: <FiFileText />, visible: permissions.canReadAudits },
     { id: "emails", label: "Email Service", icon: <FiMail />, visible: permissions.canReadEmails },
     { id: "auth-methods", label: "Auth methods", icon: <FiLogIn />, visible: permissions.canReadAuthMethods },
+    { id: "credits", label: "Credits", icon: <FiAward />, visible: permissions.canReadCredits },
     { id: "patreon", label: "Patreon", icon: <FiHeart />, visible: permissions.canReadPatreon },
   ], [permissions]);
   const visibleSectionItems = useMemo(() => sectionItems.filter((item) => item.visible), [sectionItems]);
@@ -56,6 +59,7 @@ export default function Admin() {
   const audits = useAdminAudits(permissions.canReadAudits, permissions.canReadUsers, section);
   const email = useEmailLimits(permissions.canReadEmails, permissions.canUpdateEmails, permissions.canReadAudits, section, audits.refetchAudits);
   const authMethods = useAdminAuthMethods(permissions.canReadAuthMethods, permissions.canUpdateAuthMethods, permissions.canReadAudits, section, audits.refetchAudits);
+  const credits = useAdminCredits(permissions.canReadCredits, permissions.canUpdateCredits, permissions.canReadUsers, permissions.canReadAudits, section, audits.refetchAudits);
   const patreonCatalog = usePatreonCatalog(permissions.canReadPatreon, permissions.canUpdatePatreon, permissions.canReadAudits, section, audits.refetchAudits);
   const roleActions = useRoleActions(permissions.canUpdateRolePermissions, catalogs.refetchRoles);
   const accountActions = useAccountActions({
@@ -144,6 +148,7 @@ export default function Admin() {
             {section === "permissions" ? <PermissionsSection permissions={catalogs.permissions} permissionsLoading={catalogs.permissionsLoading} permissionsError={catalogs.permissionsError} onRefresh={catalogs.refetchPermissions} /> : null}
             {section === "emails" ? <EmailSection canUpdateEmails={permissions.canUpdateEmails} dailyIpLimit={email.dailyIpLimit} dailyRecipientLimit={email.dailyRecipientLimit} dailyResetHourUtc={email.dailyResetHourUtc} emailLimits={email.emailLimits} emailLimitsError={email.emailLimitsError} emailLimitsLoading={email.emailLimitsLoading} emailLimitsSaving={email.emailLimitsSaving} monthlyHardLimit={email.monthlyHardLimit} monthlyResetDay={email.monthlyResetDay} onDailyIpLimit={email.setDailyIpLimit} onDailyRecipientLimit={email.setDailyRecipientLimit} onDailyResetHourUtc={email.setDailyResetHourUtc} onMonthlyHardLimit={email.setMonthlyHardLimit} onMonthlyResetDay={email.setMonthlyResetDay} onRefresh={email.refetchEmailLimits} onSave={() => void email.saveEmailLimits()} /> : null}
             {section === "auth-methods" ? <AuthMethodsSection canUpdate={permissions.canUpdateAuthMethods} draft={authMethods.draft} error={authMethods.error} loading={authMethods.loading} saving={authMethods.saving} onRefresh={authMethods.refresh} onSave={() => void authMethods.save()} onSetEnabled={authMethods.setEnabled} /> : null}
+            {section === "credits" ? <CreditsSection canReadUsers={permissions.canReadUsers} canUpdate={permissions.canUpdateCredits} draft={credits.draft} error={credits.error} loading={credits.loading} saving={credits.saving} userResults={credits.userResults} userSearch={credits.userSearch} userSearchLoading={credits.userSearchLoading} onAddCategory={credits.addCategory} onAddContributor={credits.addContributor} onDeleteCategory={credits.removeCategory} onDeleteContributor={credits.deleteContributor} onLinkContributor={credits.linkContributor} onMoveCategory={credits.moveCategory} onMoveContributor={credits.moveContributor} onRefresh={credits.refresh} onSave={() => void credits.save()} onSearchUsers={() => void credits.searchUsers()} onSetCategoryName={credits.setCategoryName} onSetContributorName={credits.setContributorName} onSetUserSearch={credits.setUserSearch} onUnlinkContributor={credits.unlinkContributor} /> : null}
             {section === "patreon" ? <PatreonSection canUpdatePatreon={permissions.canUpdatePatreon} labelsJson={patreonCatalog.patreonTierLabelsJson} labelsSaving={patreonCatalog.patreonTierLabelsSaving} onLabelsJson={patreonCatalog.setPatreonTierLabelsJson} onRefresh={patreonCatalog.refetchPatreon} onSaveLabels={() => void patreonCatalog.savePatreonTierLabels()} tiers={patreonCatalog.patreonTiers} tiersError={patreonCatalog.patreonTiersError} tiersLoading={patreonCatalog.patreonTiersLoading} /> : null}
             {section === "audits" ? <AuditsSection accountFilter={audits.auditAccountFilter} accountLookup={audits.auditAccountLookup} auditViewMode={audits.auditViewMode} auditsError={audits.auditsError} auditsLoading={audits.auditsLoading} auditsPage={audits.auditsPage} auditsPageCount={audits.auditsPageCount} auditsPageSize={audits.auditsPageSize} auditsTotal={audits.auditsTotal} eventType={audits.auditEventType} events={audits.auditEvents} loadingUserSearch={audits.auditUserSearchLoading} onApplyUserSearch={audits.applyAuditAccountSearch} onEventType={audits.setAuditEventType} onPage={audits.setAuditsPage} onPageSize={audits.setAuditsPageSize} onRefresh={audits.refetchAudits} onResetFilters={audits.resetAuditFilters} onViewMode={audits.setAuditViewMode} roles={catalogs.roles} userSearch={audits.auditUserSearch} /> : null}
           </section>

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { AdminAccountDetailResponse, AuditEventResponse, PermissionResponse, ProfileResponse, RoleResponse } from "../../auth/types";
 
-export type AdminSection = "overview" | "users" | "banned" | "roles" | "permissions" | "audits" | "emails" | "auth-methods" | "patreon";
+export type AdminSection = "overview" | "users" | "banned" | "roles" | "permissions" | "audits" | "emails" | "auth-methods" | "credits" | "patreon";
 export type RestrictionKindDraft = "ban" | "suspension";
 export type AuditViewMode = "readable" | "technical";
 export type AuditAccountSummary = NonNullable<AuditEventResponse["actor"]>;
@@ -48,6 +48,8 @@ export type AdminPermissions = {
   canUpdateEmails: boolean;
   canReadAuthMethods: boolean;
   canUpdateAuthMethods: boolean;
+  canReadCredits: boolean;
+  canUpdateCredits: boolean;
   canReadPatreon: boolean;
   canUpdatePatreon: boolean;
 };

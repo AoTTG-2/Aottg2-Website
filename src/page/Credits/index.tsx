@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { creditsApi } from "../../auth/creditsApi";
+import type { PublicCreditCategory } from "../../auth/creditsTypes";
 import { creditJson } from "../../data/links";
 import BackgroundImage from "../../assets/images/bg-dark.webp";
 import BrushSvg from "../../components/BrushSvg";
 
-interface CreditItem {
+interface LegacyCreditItem {
   Category: string;
   Names: string[];
 }
@@ -103,13 +105,40 @@ const CreditList: React.FC<{ names: string[] }> = ({ names }) => {
 };
 
 const Credits: React.FC = () => {
-  const [credits, setCredits] = useState<CreditItem[]>([]);
+  const [credits, setCredits] = useState<PublicCreditCategory[]>([]);
 
   useEffect(() => {
-    fetch(creditJson)
-      .then((response) => response.json())
-      .then((data: CreditItem[]) => setCredits(data))
-      .catch((error) => console.error("Error fetching credits:", error));
+    const controller = new AbortController();
+
+    async function loadCredits() {
+      const fallback = async () => {
+        const response = await fetch(creditJson);
+        const data = await response.json() as LegacyCreditItem[];
+        setCredits(data.map((credit) => ({
+          name: credit.Category,
+          contributors: credit.Names.map((name) => ({ name })),
+        })));
+      };
+
+      let useFallback = true;
+      try {
+        const { ok, data } = await creditsApi.getPublic(controller.signal);
+        if (controller.signal.aborted) return;
+        if (ok && data.categories?.length) {
+          setCredits(data.categories);
+          useFallback = false;
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error("Error fetching credits:", error);
+        }
+      }
+
+      if (useFallback && !controller.signal.aborted) await fallback();
+    }
+
+    void loadCredits();
+    return () => controller.abort();
   }, []);
 
   return (
@@ -131,10 +160,10 @@ const Credits: React.FC = () => {
             className="flex flex-col justify-center items-center gap-4"
           >
             <CreditHeader
-              category={credit.Category}
+              category={credit.name}
               colorIndex={index % colors.length}
             />
-            <CreditList names={credit.Names} />
+            <CreditList names={credit.contributors.map((contributor) => contributor.name)} />
           </div>
         ))}
       </div>
