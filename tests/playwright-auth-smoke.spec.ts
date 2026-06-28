@@ -45,7 +45,7 @@ test('website login reaches account page and logout returns to login', async ({ 
 
   await expect(page).toHaveURL(/\/accounts$/);
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
-  await expect(page.getByText(email)).toBeVisible();
+  await expect(page.locator(`[title="${email}"]`)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Display name' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Delete account' })).toBeVisible();
@@ -89,6 +89,14 @@ test('auth portal replacement routes render', async ({ page }) => {
 
   await page.goto('http://localhost:5173/oauth-callback');
   await expect(page.getByRole('heading', { name: 'Sign-in failed' })).toBeVisible();
+
+  await page.goto('http://localhost:5173/unity-auth/complete?status=success');
+  await expect(page.getByRole('heading', { name: 'Signed in' })).toBeVisible();
+  await expect(page.getByText('You can return to AOTTG2.')).toBeVisible();
+
+  await page.goto('http://localhost:5173/unity-auth/complete?status=failed&error=oauth_denied');
+  await expect(page.getByRole('heading', { name: 'Sign-in failed' })).toBeVisible();
+  await expect(page.getByText('Return to the game and try again.')).toBeVisible();
 });
 
 test('oauth callback exchanges session code and opens account page', async ({ page }) => {
@@ -104,5 +112,5 @@ test('oauth callback exchanges session code and opens account page', async ({ pa
   await expect(page).toHaveURL(/\/accounts$/);
   await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'OAuth Tester' })).toBeVisible();
-  await expect(page.getByText('oauth@example.test')).toBeVisible();
+  await expect(page.locator('[title="oauth@example.test"]')).toBeVisible();
 });

@@ -30,6 +30,7 @@ const ForgotPassword = lazy(() => import("./page/ForgotPassword"));
 const ResetPassword = lazy(() => import("./page/ResetPassword"));
 const OAuthCallback = lazy(() => import("./page/OAuthCallback"));
 const PatreonCallback = lazy(() => import("./page/PatreonCallback"));
+const UnityAuthComplete = lazy(() => import("./page/UnityAuthComplete"));
 const Accounts = lazy(() => import("./page/Accounts"));
 const Profile = lazy(() => import("./page/Profile"));
 const Admin = lazy(() => import("./page/Admin"));
@@ -46,6 +47,7 @@ const AUTH_ROUTE_PREFIXES = [
   "/reset-password",
   "/oauth-callback",
   "/patreon-callback",
+  "/unity-auth",
   "/accounts",
   "/account",
   "/profile",
@@ -196,6 +198,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/oauth-callback" element={<OAuthCallback />} />
               <Route path="/patreon-callback" element={<PatreonCallback />} />
+              <Route path="/unity-auth/complete" element={<UnityAuthComplete />} />
               <Route path="/accounts" element={<Accounts />} />
               <Route path="/account" element={<Navigate to="/accounts" replace />} />
               <Route path="/profile" element={<Profile />} />
