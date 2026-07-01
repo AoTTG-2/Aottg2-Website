@@ -193,9 +193,12 @@ export default function Login() {
         <DialogHeader>
           <DialogTitle>Email not verified</DialogTitle>
           <DialogDescription>
-            Verify {unverifiedEmail} before signing in. Check your inbox and spam folder for the verification link.
+            Verify {unverifiedEmail} before signing in. We sent a verification link to that email address.
           </DialogDescription>
         </DialogHeader>
+        <div className="rounded-none border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">Can't find it?</span> Check your spam or promotions folder. If it is still missing, use Resend verification email below.
+        </div>
         {resendMessage && <p className="text-sm text-muted-foreground">{resendMessage}</p>}
         {resendError && <p className="text-sm font-semibold text-destructive">{resendError}</p>}
         <DialogFooter>
