@@ -62,9 +62,14 @@ export default function Register() {
       <AuthShell title={title} subtitle={subtitle}>
         <div className="mt-8">
           {verificationEmailSent ? (
-            <SuccessMessage>
-              Click the verification link to activate your account, then sign in. If you do not see it, check your spam folder.
-            </SuccessMessage>
+            <>
+              <SuccessMessage>
+                Click the verification link to activate your account, then sign in.
+              </SuccessMessage>
+              <div className="mt-4 rounded-none border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">Can't find it?</span> Check your spam or promotions folder. If it is still missing, use Resend verification email below.
+              </div>
+            </>
           ) : (
             <ErrorMessage>
               Your account was created, but the verification email could not be sent. Try resending it in a moment.
