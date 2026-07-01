@@ -251,6 +251,7 @@ export interface RegisterResponse {
   accountId: string;
   email: string;
   verificationToken?: string | null;
+  verificationEmailSent: boolean;
 }
 
 export interface OAuthStartResponse {
@@ -265,6 +266,8 @@ export interface SessionCodeResponse {
 export interface ErrorResponse {
   error?: string;
   code?: string;
+  email?: string;
+  resendAvailableAt?: string;
   restriction?: AccountRestrictionResponse;
 }
 

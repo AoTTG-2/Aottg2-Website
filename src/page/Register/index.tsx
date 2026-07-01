@@ -14,6 +14,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [verificationEmailSent, setVerificationEmailSent] = useState(true);
   const [error, setError] = useState("");
   const authMethods = usePublicAuthMethods();
   const emailEnabled = isAuthMethodEnabled(authMethods.methods, "email_password");
@@ -38,6 +39,7 @@ export default function Register() {
     try {
       const { ok, data } = await authApi.register(email, displayName, password);
       if (ok) {
+        setVerificationEmailSent(data.verificationEmailSent !== false);
         setSuccess(true);
       } else {
         setError(data.error ?? "Registration failed.");
@@ -50,12 +52,23 @@ export default function Register() {
   }
 
   if (success) {
+    const title = verificationEmailSent ? "Check your email" : "Account created";
+    const subtitle = verificationEmailSent
+      ? `We sent a verification link to ${email}.`
+      : `We could not send a verification link to ${email}.`;
+
     return (
-      <AuthShell title="Check your email" subtitle={`We sent a verification link to ${email}.`}>
+      <AuthShell title={title} subtitle={subtitle}>
         <div className="mt-8">
-          <SuccessMessage>
-            Click the verification link to activate your account, then sign in. If you do not see it, check your spam folder.
-          </SuccessMessage>
+          {verificationEmailSent ? (
+            <SuccessMessage>
+              Click the verification link to activate your account, then sign in. If you do not see it, check your spam folder.
+            </SuccessMessage>
+          ) : (
+            <ErrorMessage>
+              Your account was created, but the verification email could not be sent. Try resending it in a moment.
+            </ErrorMessage>
+          )}
         </div>
         <div className="mt-6 flex flex-col gap-3 text-center text-sm font-medium">
           <Link className="text-foreground underline underline-offset-4" to="/resend-verification">

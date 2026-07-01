@@ -80,7 +80,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = useCallback(async (email: string, password: string) => {
     const { ok, data } = await authApi.login(email, password);
     if (!ok || !data.accessToken || !data.refreshToken) {
-      return { ok: false, error: formatRestrictedLoginError(data) };
+      return {
+        ok: false,
+        error: formatRestrictedLoginError(data),
+        code: data.code,
+        email: data.email,
+        resendAvailableAt: data.resendAvailableAt,
+      };
     }
 
     setTokens(data.accessToken, data.refreshToken);
