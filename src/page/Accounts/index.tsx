@@ -25,6 +25,7 @@ import {
   Skeleton,
   cn,
 } from "@aottg2/ui";
+import { PasswordInput } from "../../components/PasswordInput";
 import { ErrorMessage, SuccessMessage } from "../Auth/AuthShell";
 import { useAccountsTheme } from "../Auth/accounts-theme-context";
 
@@ -455,11 +456,11 @@ export default function Accounts() {
                   <form className="space-y-4" onSubmit={handleSetPassword}>
                     <div className="space-y-2">
                       <Label htmlFor="set-password">New password</Label>
-                      <Input id="set-password" type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} />
+                      <PasswordInput id="set-password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirm-set-password">Confirm password</Label>
-                      <Input id="confirm-set-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} />
+                      <PasswordInput id="confirm-set-password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} />
                     </div>
                     {passwordError && <ErrorMessage>{passwordError}</ErrorMessage>}
                     {passwordOk && <SuccessMessage>{passwordOk}</SuccessMessage>}

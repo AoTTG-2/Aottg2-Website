@@ -4,6 +4,7 @@ import { authApi } from "../../auth/api";
 import { enabledOAuthProviders, isAuthMethodEnabled } from "../../auth/authMethods";
 import { usePublicAuthMethods } from "../../auth/usePublicAuthMethods";
 import { Button, EmptyState, Input, Label, Spinner } from "@aottg2/ui";
+import { PasswordInput } from "../../components/PasswordInput";
 import { AuthShell, ErrorMessage, SuccessMessage } from "../Auth/AuthShell";
 import { OAuthButtons, OAuthDivider } from "../Auth/OAuthButtons";
 
@@ -126,9 +127,8 @@ export default function Register() {
 
         <div className="space-y-2">
           <Label htmlFor="register-password">Password</Label>
-          <Input
+          <PasswordInput
             id="register-password"
-            type="password"
             autoComplete="new-password"
             placeholder="At least 8 characters"
             value={password}
@@ -139,9 +139,8 @@ export default function Register() {
 
         <div className="space-y-2">
           <Label htmlFor="confirm-password">Confirm password</Label>
-          <Input
+          <PasswordInput
             id="confirm-password"
-            type="password"
             autoComplete="new-password"
             placeholder="Repeat password"
             value={confirmPassword}

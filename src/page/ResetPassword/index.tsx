@@ -1,7 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { authApi } from "../../auth/api";
-import { Button, Input, Label } from "@aottg2/ui";
+import { Button, Label } from "@aottg2/ui";
+import { PasswordInput } from "../../components/PasswordInput";
 import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
 
 export default function ResetPassword() {
@@ -71,9 +72,8 @@ export default function ResetPassword() {
       <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
         <div className="space-y-2">
           <Label htmlFor="new-password">New password</Label>
-          <Input
+          <PasswordInput
             id="new-password"
-            type="password"
             autoComplete="new-password"
             placeholder="At least 8 characters"
             value={password}
@@ -84,9 +84,8 @@ export default function ResetPassword() {
 
         <div className="space-y-2">
           <Label htmlFor="confirm-new-password">Confirm password</Label>
-          <Input
+          <PasswordInput
             id="confirm-new-password"
-            type="password"
             autoComplete="new-password"
             placeholder="Repeat password"
             value={confirmPassword}

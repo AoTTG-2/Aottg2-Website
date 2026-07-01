@@ -6,6 +6,7 @@ import { buildWorkshopCallbackUrl, getLoginNext } from "../../auth/loginRedirect
 import { usePublicAuthMethods } from "../../auth/usePublicAuthMethods";
 import { useAuth } from "../../auth/useAuth";
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Input, Label, Spinner } from "@aottg2/ui";
+import { PasswordInput } from "../../components/PasswordInput";
 import { AuthShell, ErrorMessage } from "../Auth/AuthShell";
 import { OAuthButtons, OAuthDivider } from "../Auth/OAuthButtons";
 
@@ -153,9 +154,8 @@ export default function Login() {
 
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             placeholder="Your password"
             value={password}
