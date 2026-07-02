@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from "react";
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Input, Label, Spinner, Textarea } from "@aottg2/ui";
 import type { ChangelogEntryResponse } from "../../../auth/changelogTypes";
 import { formatAuditTimestamp } from "../utils/format";
@@ -40,6 +41,7 @@ export function ChangelogSection({
   onVersion: (value: string) => void;
 }) {
   const isPublished = selected?.publishedAt != null;
+  const [view, setView] = useState<"editor" | "preview">("editor");
 
   return (
     <>
@@ -105,16 +107,28 @@ export function ChangelogSection({
                 <Input id="changelog-version" value={version} disabled={!canUpdate || saving} placeholder="1.0.0" onChange={(event) => onVersion(event.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="changelog-content">Content</Label>
-                <Textarea
-                  id="changelog-content"
-                  className="min-h-80 font-mono text-sm"
-                  value={contentMarkdown}
-                  disabled={!canUpdate || saving}
-                  placeholder={"## Highlights\n- Fixed login\n- Added new maps"}
-                  spellCheck
-                  onChange={(event) => onContentMarkdown(event.target.value)}
-                />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <Label htmlFor="changelog-content">Content</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant={view === "editor" ? "default" : "secondary"} aria-pressed={view === "editor"} onClick={() => setView("editor")}>Editor</Button>
+                    <Button type="button" size="sm" variant={view === "preview" ? "default" : "secondary"} aria-pressed={view === "preview"} onClick={() => setView("preview")}>Preview</Button>
+                  </div>
+                </div>
+                {view === "editor" ? (
+                  <Textarea
+                    id="changelog-content"
+                    className="min-h-[36rem] font-mono text-sm leading-7 lg:min-h-[42rem]"
+                    value={contentMarkdown}
+                    disabled={!canUpdate || saving}
+                    placeholder={"# Highlights\n- Fixed **login**\n- Added *new maps*"}
+                    spellCheck
+                    onChange={(event) => onContentMarkdown(event.target.value)}
+                  />
+                ) : (
+                  <div className="min-h-[36rem] space-y-3 border border-border bg-background/60 p-4 text-base leading-7 text-foreground lg:min-h-[42rem]">
+                    {renderPreview(contentMarkdown)}
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {canUpdate ? <Button type="button" disabled={saving} onClick={onSave}>{saving ? "Saving..." : "Save draft"}</Button> : null}
@@ -128,4 +142,49 @@ export function ChangelogSection({
       )}
     </>
   );
+}
+
+function renderPreview(markdown: string) {
+  const lines = markdown.split(/\r?\n/);
+  const nodes: ReactNode[] = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    const header = line.match(/^#{1,2}\s+(.+)$/);
+    if (header) {
+      nodes.push(<div key={i} className="font-primary text-base leading-7">{renderInline(header[1])}</div>);
+      continue;
+    }
+
+    if (/^-\s+/.test(line)) {
+      const items: string[] = [];
+      const start = i;
+      while (i < lines.length && /^-\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^-\s+/, ""));
+        i += 1;
+      }
+      i -= 1;
+      nodes.push(
+        <ul key={start} className="list-disc space-y-1 pl-6 text-base leading-7">
+          {items.map((item, index) => <li key={`${start}-${index}`}>{renderInline(item)}</li>)}
+        </ul>,
+      );
+      continue;
+    }
+
+    nodes.push(line.trim()
+      ? <p key={i} className="text-base leading-7">{renderInline(line)}</p>
+      : <div key={i} className="h-3" />);
+  }
+
+  return nodes.length ? nodes : <p className="text-base leading-7 text-muted-foreground">Nothing to preview.</p>;
+}
+
+function renderInline(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*")) return <em key={index} className="italic">{part.slice(1, -1)}</em>;
+    return <span key={index}>{part}</span>;
+  });
 }
