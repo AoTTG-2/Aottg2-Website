@@ -8,4 +8,5 @@ export const ADMIN_ACCESS_PERMISSIONS = [
   "auth_methods.read",
   "credits.read",
   "patreon.read",
+  "changelogs.read",
 ] as const;

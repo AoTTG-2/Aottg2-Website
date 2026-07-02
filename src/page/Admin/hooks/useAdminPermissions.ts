@@ -40,6 +40,8 @@ export function useAdminPermissions(profile: ProfileResponse | null): AdminPermi
       canUpdateCredits: isAdmin && can("credits.update"),
       canReadPatreon: isAdmin && can("patreon.read"),
       canUpdatePatreon: isAdmin && can("patreon.update"),
+      canReadChangelogs: isAdmin && can("changelogs.read"),
+      canUpdateChangelogs: isAdmin && can("changelogs.update"),
     };
   }, [profile]);
 }

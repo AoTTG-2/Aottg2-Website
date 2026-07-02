@@ -12,6 +12,7 @@ export function OverviewSection({ permissions, profile, onSection }: { permissio
     { title: "Email Service", description: "Monitor SES usage and quota settings.", section: "emails" as AdminSection, visible: permissions.canReadEmails },
     { title: "Credits", description: "Manage public credits categories.", section: "credits" as AdminSection, visible: permissions.canReadCredits },
     { title: "Patreon", description: "Review live tiers and fallback labels.", section: "patreon" as AdminSection, visible: permissions.canReadPatreon },
+    { title: "Changelog", description: "Create and publish game-facing release notes.", section: "changelog" as AdminSection, visible: permissions.canReadChangelogs },
   ].filter((item) => item.visible);
 
   return (

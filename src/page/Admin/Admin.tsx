@@ -15,6 +15,7 @@ import { useAccountActions } from "./hooks/useAccountActions";
 import { useAdminAudits } from "./hooks/useAdminAudits";
 import { useAdminAuthMethods } from "./hooks/useAdminAuthMethods";
 import { useAdminCatalogs } from "./hooks/useAdminCatalogs";
+import { useAdminChangelogs } from "./hooks/useAdminChangelogs";
 import { useAdminCredits } from "./hooks/useAdminCredits";
 import { useAdminPermissions } from "./hooks/useAdminPermissions";
 import { useAdminUsers } from "./hooks/useAdminUsers";
@@ -25,6 +26,7 @@ import { useUserColumns } from "./hooks/useUserColumns";
 import { useUserPatreonActions } from "./hooks/useUserPatreonActions";
 import { AuthMethodsSection } from "./sections/AuthMethodsSection";
 import { AuditsSection } from "./sections/AuditsSection";
+import { ChangelogSection } from "./sections/ChangelogSection";
 import { CreditsSection } from "./sections/CreditsSection";
 import { EmailSection } from "./sections/EmailSection";
 import { OverviewSection } from "./sections/OverviewSection";
@@ -51,6 +53,7 @@ export default function Admin() {
     { id: "auth-methods", label: "Auth methods", icon: <FiLogIn />, visible: permissions.canReadAuthMethods },
     { id: "credits", label: "Credits", icon: <FiAward />, visible: permissions.canReadCredits },
     { id: "patreon", label: "Patreon", icon: <FiHeart />, visible: permissions.canReadPatreon },
+    { id: "changelog", label: "Changelog", icon: <FiFileText />, visible: permissions.canReadChangelogs },
   ], [permissions]);
   const visibleSectionItems = useMemo(() => sectionItems.filter((item) => item.visible), [sectionItems]);
 
@@ -61,6 +64,7 @@ export default function Admin() {
   const authMethods = useAdminAuthMethods(permissions.canReadAuthMethods, permissions.canUpdateAuthMethods, permissions.canReadAudits, section, audits.refetchAudits);
   const credits = useAdminCredits(permissions.canReadCredits, permissions.canUpdateCredits, permissions.canReadUsers, permissions.canReadAudits, section, audits.refetchAudits);
   const patreonCatalog = usePatreonCatalog(permissions.canReadPatreon, permissions.canUpdatePatreon, permissions.canReadAudits, section, audits.refetchAudits);
+  const changelogs = useAdminChangelogs(permissions.canReadChangelogs, permissions.canUpdateChangelogs, permissions.canReadAudits, section, audits.refetchAudits);
   const roleActions = useRoleActions(permissions.canUpdateRolePermissions, catalogs.refetchRoles);
   const accountActions = useAccountActions({
     canAssignUserRoles: permissions.canAssignUserRoles,
@@ -150,6 +154,7 @@ export default function Admin() {
             {section === "auth-methods" ? <AuthMethodsSection canUpdate={permissions.canUpdateAuthMethods} draft={authMethods.draft} error={authMethods.error} loading={authMethods.loading} saving={authMethods.saving} onRefresh={authMethods.refresh} onSave={() => void authMethods.save()} onSetEnabled={authMethods.setEnabled} /> : null}
             {section === "credits" ? <CreditsSection canReadUsers={permissions.canReadUsers} canUpdate={permissions.canUpdateCredits} draft={credits.draft} error={credits.error} loading={credits.loading} saving={credits.saving} userResults={credits.userResults} userSearch={credits.userSearch} userSearchLoading={credits.userSearchLoading} onAddCategory={credits.addCategory} onAddContributor={credits.addContributor} onDeleteCategory={credits.removeCategory} onDeleteContributor={credits.deleteContributor} onLinkContributor={credits.linkContributor} onMoveCategory={credits.moveCategory} onMoveContributor={credits.moveContributor} onRefresh={credits.refresh} onSave={() => void credits.save()} onSearchUsers={() => void credits.searchUsers()} onSetCategoryName={credits.setCategoryName} onSetContributorName={credits.setContributorName} onSetUserSearch={credits.setUserSearch} onUnlinkContributor={credits.unlinkContributor} /> : null}
             {section === "patreon" ? <PatreonSection canUpdatePatreon={permissions.canUpdatePatreon} labelsJson={patreonCatalog.patreonTierLabelsJson} labelsSaving={patreonCatalog.patreonTierLabelsSaving} onLabelsJson={patreonCatalog.setPatreonTierLabelsJson} onRefresh={patreonCatalog.refetchPatreon} onSaveLabels={() => void patreonCatalog.savePatreonTierLabels()} tiers={patreonCatalog.patreonTiers} tiersError={patreonCatalog.patreonTiersError} tiersLoading={patreonCatalog.patreonTiersLoading} /> : null}
+            {section === "changelog" ? <ChangelogSection canUpdate={permissions.canUpdateChangelogs} contentMarkdown={changelogs.contentMarkdown} entries={changelogs.entries} error={changelogs.error} loading={changelogs.loading} saving={changelogs.saving} selected={changelogs.selected} version={changelogs.version} onContentMarkdown={changelogs.setContentMarkdown} onDeleteDraft={() => void changelogs.deleteDraft()} onNewDraft={changelogs.newDraft} onPublish={() => void changelogs.publish()} onRefresh={changelogs.refresh} onSave={() => void changelogs.save()} onSelect={changelogs.selectEntry} onUnpublish={() => void changelogs.unpublish()} onVersion={changelogs.setVersion} /> : null}
             {section === "audits" ? <AuditsSection accountFilter={audits.auditAccountFilter} accountLookup={audits.auditAccountLookup} auditViewMode={audits.auditViewMode} auditsError={audits.auditsError} auditsLoading={audits.auditsLoading} auditsPage={audits.auditsPage} auditsPageCount={audits.auditsPageCount} auditsPageSize={audits.auditsPageSize} auditsTotal={audits.auditsTotal} eventType={audits.auditEventType} events={audits.auditEvents} loadingUserSearch={audits.auditUserSearchLoading} onApplyUserSearch={audits.applyAuditAccountSearch} onEventType={audits.setAuditEventType} onPage={audits.setAuditsPage} onPageSize={audits.setAuditsPageSize} onRefresh={audits.refetchAudits} onResetFilters={audits.resetAuditFilters} onViewMode={audits.setAuditViewMode} roles={catalogs.roles} userSearch={audits.auditUserSearch} /> : null}
           </section>
         </div>
