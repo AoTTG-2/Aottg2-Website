@@ -1,5 +1,6 @@
 export interface PublicCreditContributor {
   name: string;
+  accountId: string | null;
 }
 
 export interface PublicCreditCategory {

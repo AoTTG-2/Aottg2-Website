@@ -14,11 +14,17 @@ interface LegacyCreditItem {
 const normalizeCredit = (credit: PublicCreditCategory): PublicCreditCategory => ({
   ...credit,
   description: credit.description ?? null,
-  contributors: credit.contributors ?? [],
+  contributors: (credit.contributors ?? []).map((contributor) => ({
+    ...contributor,
+    accountId: contributor.accountId ?? null,
+  })),
   groups: (credit.groups ?? []).map((group) => ({
     ...group,
     description: group.description ?? null,
-    contributors: group.contributors ?? [],
+    contributors: (group.contributors ?? []).map((contributor) => ({
+      ...contributor,
+      accountId: contributor.accountId ?? null,
+    })),
   })),
 });
 
@@ -128,7 +134,7 @@ const Credits: React.FC = () => {
         setCredits(data.map((credit) => ({
           name: credit.Category,
           description: null,
-          contributors: credit.Names.map((name) => ({ name })),
+          contributors: credit.Names.map((name) => ({ name, accountId: null })),
           groups: [],
         })));
       };
