@@ -35,6 +35,17 @@ const normalizeCategory = (category: AdminCreditCategory): AdminCreditCategory =
   groups: category.groups ?? [],
 });
 
+function reorderById<T extends { id: string }>(items: T[], activeId: string, overId: string) {
+  const activeIndex = items.findIndex((item) => item.id === activeId);
+  const overIndex = items.findIndex((item) => item.id === overId);
+  if (activeIndex < 0 || overIndex < 0 || activeIndex === overIndex) return items;
+
+  const next = [...items];
+  const [item] = next.splice(activeIndex, 1);
+  next.splice(overIndex, 0, item);
+  return next;
+}
+
 export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUsers: boolean, canReadAudits: boolean, section: AdminSection, refetchAudits: () => void) {
   const [draft, setDraft] = useState<AdminCreditCategory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -119,6 +130,16 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
       [next[groupIndex], next[target]] = [next[target], next[groupIndex]];
       return { ...category, groups: next };
     }));
+  }
+
+  function reorderCategory(activeCategoryId: string, overCategoryId: string) {
+    setDraft((current) => reorderById(current, activeCategoryId, overCategoryId));
+  }
+
+  function reorderGroup(categoryId: string, activeGroupId: string, overGroupId: string) {
+    setDraft((current) => current.map((category) => category.id === categoryId
+      ? { ...category, groups: reorderById(category.groups, activeGroupId, overGroupId) }
+      : category));
   }
 
   function moveContributor(target: CreditContributorTarget, direction: -1 | 1) {
@@ -267,11 +288,13 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
     addCategory,
     removeCategory: (index: number) => setDraft((current) => current.filter((_, i) => i !== index)),
     moveCategory,
+    reorderCategory,
     setCategoryName: (index: number, name: string) => updateCategory(index, { name }),
     setCategoryDescription: (index: number, description: string) => updateCategory(index, { description }),
     addGroup,
     deleteGroup: (categoryIndex: number, groupIndex: number) => setDraft((current) => current.map((category, i) => i === categoryIndex ? { ...category, groups: category.groups.filter((_, j) => j !== groupIndex) } : category)),
     moveGroup,
+    reorderGroup,
     setGroupTitle: (categoryIndex: number, groupIndex: number, title: string) => updateGroup(categoryIndex, groupIndex, { title }),
     addContributor,
     deleteContributor,

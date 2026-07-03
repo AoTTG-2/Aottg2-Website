@@ -27,6 +27,8 @@ export function CreditsSection({
   onMoveCategory,
   onMoveGroup,
   onRefresh,
+  onReorderCategory,
+  onReorderGroup,
   onSave,
   onSearchUsers,
   onSetCategoryDescription,
@@ -51,6 +53,8 @@ export function CreditsSection({
   onMoveCategory: (categoryIndex: number, direction: -1 | 1) => void;
   onMoveGroup: (categoryIndex: number, groupIndex: number, direction: -1 | 1) => void;
   onRefresh: () => void;
+  onReorderCategory: (activeCategoryId: string, overCategoryId: string) => void;
+  onReorderGroup: (categoryId: string, activeGroupId: string, overGroupId: string) => void;
   onSave: () => void;
   onSearchUsers: () => void;
   onSetCategoryDescription: (categoryIndex: number, description: string) => void;
@@ -166,6 +170,8 @@ export function CreditsSection({
                     saving={saving}
                     selection={selection}
                     onAddCategory={addCategoryAndSelect}
+                    onReorderCategory={onReorderCategory}
+                    onReorderGroup={onReorderGroup}
                     onSelect={setSelection}
                   />
                 </CardContent>
