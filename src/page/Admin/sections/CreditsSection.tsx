@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { FiArrowDown, FiArrowUp, FiTrash2 } from "react-icons/fi";
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmDialog, DataTable, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState, Input, Label, Spinner } from "@aottg2/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmDialog, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState, Input, Label, Spinner } from "@aottg2/ui";
 import type { AdminCreditCategory } from "../../../auth/creditsTypes";
 import type { ProfileResponse } from "../../../auth/types";
-
-type ContributorRow = AdminCreditCategory["contributors"][number] & { contributorIndex: number };
+import { CreditContributorTable } from "../components/CreditContributorTable";
+import type { CreditContributorTarget } from "../hooks/useAdminCredits";
 
 export function CreditsSection({
   canReadUsers,
@@ -18,16 +18,21 @@ export function CreditsSection({
   userSearchLoading,
   onAddCategory,
   onAddContributor,
+  onAddGroup,
   onDeleteCategory,
   onDeleteContributor,
+  onDeleteGroup,
   onLinkContributor,
   onMoveCategory,
   onMoveContributor,
+  onMoveGroup,
   onRefresh,
   onSave,
   onSearchUsers,
+  onSetCategoryDescription,
   onSetCategoryName,
   onSetContributorName,
+  onSetGroupTitle,
   onSetUserSearch,
   onUnlinkContributor,
 }: {
@@ -41,22 +46,27 @@ export function CreditsSection({
   userSearch: string;
   userSearchLoading: boolean;
   onAddCategory: () => void;
-  onAddContributor: (categoryIndex: number) => void;
+  onAddContributor: (categoryIndex: number, groupIndex?: number) => void;
+  onAddGroup: (categoryIndex: number) => void;
   onDeleteCategory: (categoryIndex: number) => void;
-  onDeleteContributor: (categoryIndex: number, contributorIndex: number) => void;
-  onLinkContributor: (categoryIndex: number, contributorIndex: number, user: ProfileResponse) => void;
+  onDeleteContributor: (target: CreditContributorTarget) => void;
+  onDeleteGroup: (categoryIndex: number, groupIndex: number) => void;
+  onLinkContributor: (target: CreditContributorTarget, user: ProfileResponse) => void;
   onMoveCategory: (categoryIndex: number, direction: -1 | 1) => void;
-  onMoveContributor: (categoryIndex: number, contributorIndex: number, direction: -1 | 1) => void;
+  onMoveContributor: (target: CreditContributorTarget, direction: -1 | 1) => void;
+  onMoveGroup: (categoryIndex: number, groupIndex: number, direction: -1 | 1) => void;
   onRefresh: () => void;
   onSave: () => void;
   onSearchUsers: () => void;
+  onSetCategoryDescription: (categoryIndex: number, description: string) => void;
   onSetCategoryName: (categoryIndex: number, name: string) => void;
-  onSetContributorName: (categoryIndex: number, contributorIndex: number, name: string) => void;
+  onSetContributorName: (target: CreditContributorTarget, name: string) => void;
+  onSetGroupTitle: (categoryIndex: number, groupIndex: number, title: string) => void;
   onSetUserSearch: (value: string) => void;
-  onUnlinkContributor: (categoryIndex: number, contributorIndex: number) => void;
+  onUnlinkContributor: (target: CreditContributorTarget) => void;
 }) {
-  const [linkTarget, setLinkTarget] = useState<{ categoryIndex: number; contributorIndex: number } | null>(null);
-  const [unlinkTarget, setUnlinkTarget] = useState<{ categoryIndex: number; contributorIndex: number } | null>(null);
+  const [linkTarget, setLinkTarget] = useState<CreditContributorTarget | null>(null);
+  const [unlinkTarget, setUnlinkTarget] = useState<CreditContributorTarget | null>(null);
 
   return (
     <>
@@ -65,7 +75,7 @@ export function CreditsSection({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <CardTitle>Credits</CardTitle>
-              <CardDescription className="mt-2">Categories and contributor display names for the public credits page.</CardDescription>
+              <CardDescription className="mt-2">Public credits grouped by category, role, and contributor display name.</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant="secondary" onClick={onRefresh}>Refresh</Button>
@@ -83,7 +93,7 @@ export function CreditsSection({
         <>
           {draft.length ? draft.map((category, categoryIndex) => (
             <Card key={category.id} className="border-border bg-card text-card-foreground">
-              <CardHeader className="p-4">
+              <CardHeader className="space-y-4 p-4">
                 <div className="grid gap-2 lg:grid-cols-[7rem_minmax(0,1fr)_auto] lg:items-center">
                   <Label className="text-sm font-semibold" htmlFor={`credit-category-${category.id}`}>Category</Label>
                   <Input id={`credit-category-${category.id}`} className="h-10" value={category.name} disabled={!canUpdate || saving} onChange={(event) => onSetCategoryName(categoryIndex, event.target.value)} />
@@ -95,54 +105,63 @@ export function CreditsSection({
                     </div>
                   ) : null}
                 </div>
+                <div className="grid gap-2 lg:grid-cols-[7rem_minmax(0,1fr)] lg:items-center">
+                  <Label className="text-sm font-semibold" htmlFor={`credit-description-${category.id}`}>Description</Label>
+                  <Input id={`credit-description-${category.id}`} className="h-10" value={category.description ?? ""} disabled={!canUpdate || saving} onChange={(event) => onSetCategoryDescription(categoryIndex, event.target.value)} />
+                </div>
               </CardHeader>
-              <CardContent className="space-y-3 px-4 pb-4">
-                <DataTable
-                  className="admin-data-table"
-                  data={category.contributors.map((contributor, contributorIndex) => ({ ...contributor, contributorIndex }))}
-                  getRowKey={(contributor) => contributor.id}
-                  emptyTitle="No contributors"
-                  emptyDescription="Add a contributor to this category."
-                  columns={[
-                    {
-                      key: "name",
-                      header: "Contributor",
-                      cell: (contributor: ContributorRow) => (
-                        <Input
-                          className="h-9 min-w-56"
-                          value={contributor.name}
-                          disabled={!canUpdate || saving}
-                          onChange={(event) => onSetContributorName(categoryIndex, contributor.contributorIndex, event.target.value)}
-                        />
-                      ),
-                    },
-                    {
-                      key: "link",
-                      header: "Link",
-                      cell: (contributor: ContributorRow) => contributor.accountId
-                        ? <Badge variant="textured">{contributor.accountDisplayName ?? contributor.name}</Badge>
-                        : <Badge variant="outline">String only</Badge>,
-                    },
-                    {
-                      key: "actions",
-                      header: "",
-                      className: "w-0",
-                      cell: (contributor: ContributorRow) => canUpdate ? (
-                        <div className="flex flex-nowrap justify-end gap-2">
-                          <Button type="button" variant="secondary" size="icon" disabled={contributor.contributorIndex === 0 || saving} onClick={() => onMoveContributor(categoryIndex, contributor.contributorIndex, -1)} aria-label="Move contributor up"><FiArrowUp /></Button>
-                          <Button type="button" variant="secondary" size="icon" disabled={contributor.contributorIndex === category.contributors.length - 1 || saving} onClick={() => onMoveContributor(categoryIndex, contributor.contributorIndex, 1)} aria-label="Move contributor down"><FiArrowDown /></Button>
-                          {contributor.accountId ? (
-                            <Button type="button" variant="destructive" disabled={saving} onClick={() => setUnlinkTarget({ categoryIndex, contributorIndex: contributor.contributorIndex })}>Unlink</Button>
-                          ) : canReadUsers ? (
-                            <Button type="button" variant="secondary" disabled={saving} onClick={() => setLinkTarget({ categoryIndex, contributorIndex: contributor.contributorIndex })}>Link</Button>
-                          ) : null}
-                          <Button type="button" variant="destructive" size="icon" disabled={saving} onClick={() => onDeleteContributor(categoryIndex, contributor.contributorIndex)} aria-label="Delete contributor"><FiTrash2 /></Button>
-                        </div>
-                      ) : null,
-                    },
-                  ]}
-                />
-                {canUpdate ? <Button type="button" variant="secondary" disabled={saving} onClick={() => onAddContributor(categoryIndex)}>Add contributor</Button> : null}
+              <CardContent className="space-y-5 px-4 pb-4">
+                <section className="space-y-2">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Category contributors</h3>
+                  <CreditContributorTable
+                    canReadUsers={canReadUsers}
+                    canUpdate={canUpdate}
+                    contributors={category.contributors}
+                    saving={saving}
+                    target={{ categoryIndex }}
+                    onAddContributor={onAddContributor}
+                    onDeleteContributor={onDeleteContributor}
+                    onLinkTarget={setLinkTarget}
+                    onMoveContributor={onMoveContributor}
+                    onSetContributorName={onSetContributorName}
+                    onUnlinkTarget={setUnlinkTarget}
+                  />
+                </section>
+
+                <section className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Groups</h3>
+                    {canUpdate ? <Button type="button" variant="secondary" disabled={saving} onClick={() => onAddGroup(categoryIndex)}>Add group</Button> : null}
+                  </div>
+                  {category.groups.length ? category.groups.map((group, groupIndex) => (
+                    <div key={group.id} className="space-y-3 border border-border bg-background/40 p-3">
+                      <div className="grid gap-2 lg:grid-cols-[5rem_minmax(0,1fr)_auto] lg:items-center">
+                        <Label className="text-sm font-semibold" htmlFor={`credit-group-${group.id}`}>Role</Label>
+                        <Input id={`credit-group-${group.id}`} className="h-10" value={group.title} disabled={!canUpdate || saving} onChange={(event) => onSetGroupTitle(categoryIndex, groupIndex, event.target.value)} />
+                        {canUpdate ? (
+                          <div className="flex flex-wrap gap-2">
+                            <Button type="button" variant="secondary" size="icon" disabled={groupIndex === 0 || saving} onClick={() => onMoveGroup(categoryIndex, groupIndex, -1)} aria-label="Move group up"><FiArrowUp /></Button>
+                            <Button type="button" variant="secondary" size="icon" disabled={groupIndex === category.groups.length - 1 || saving} onClick={() => onMoveGroup(categoryIndex, groupIndex, 1)} aria-label="Move group down"><FiArrowDown /></Button>
+                            <Button type="button" variant="destructive" size="icon" disabled={saving} onClick={() => onDeleteGroup(categoryIndex, groupIndex)} aria-label="Delete group"><FiTrash2 /></Button>
+                          </div>
+                        ) : null}
+                      </div>
+                      <CreditContributorTable
+                        canReadUsers={canReadUsers}
+                        canUpdate={canUpdate}
+                        contributors={group.contributors}
+                        saving={saving}
+                        target={{ categoryIndex, groupIndex }}
+                        onAddContributor={onAddContributor}
+                        onDeleteContributor={onDeleteContributor}
+                        onLinkTarget={setLinkTarget}
+                        onMoveContributor={onMoveContributor}
+                        onSetContributorName={onSetContributorName}
+                        onUnlinkTarget={setUnlinkTarget}
+                      />
+                    </div>
+                  )) : <EmptyState title="No groups" description="Add role groups when a category has sub-sections." />}
+                </section>
               </CardContent>
             </Card>
           )) : (
@@ -172,7 +191,7 @@ export function CreditsSection({
                       disabled={saving || linkTarget === null}
                       onClick={() => {
                         if (!linkTarget) return;
-                        onLinkContributor(linkTarget.categoryIndex, linkTarget.contributorIndex, user);
+                        onLinkContributor(linkTarget, user);
                         setLinkTarget(null);
                       }}
                     >
@@ -192,7 +211,7 @@ export function CreditsSection({
             destructive
             onConfirm={() => {
               if (!unlinkTarget) return;
-              onUnlinkContributor(unlinkTarget.categoryIndex, unlinkTarget.contributorIndex);
+              onUnlinkContributor(unlinkTarget);
               setUnlinkTarget(null);
             }}
           />

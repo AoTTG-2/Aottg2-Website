@@ -11,6 +11,13 @@ interface LegacyCreditItem {
   Names: string[];
 }
 
+const normalizeCredit = (credit: PublicCreditCategory): PublicCreditCategory => ({
+  ...credit,
+  description: credit.description ?? null,
+  contributors: credit.contributors ?? [],
+  groups: credit.groups ?? [],
+});
+
 const brushVariants = {
   hidden: {
     x: -60,
@@ -116,7 +123,9 @@ const Credits: React.FC = () => {
         const data = await response.json() as LegacyCreditItem[];
         setCredits(data.map((credit) => ({
           name: credit.Category,
+          description: null,
           contributors: credit.Names.map((name) => ({ name })),
+          groups: [],
         })));
       };
 
@@ -125,7 +134,7 @@ const Credits: React.FC = () => {
         const { ok, data } = await creditsApi.getPublic(controller.signal);
         if (controller.signal.aborted) return;
         if (ok && data.categories?.length) {
-          setCredits(data.categories);
+          setCredits(data.categories.map(normalizeCredit));
           useFallback = false;
         }
       } catch (error) {
@@ -163,7 +172,14 @@ const Credits: React.FC = () => {
               category={credit.name}
               colorIndex={index % colors.length}
             />
-            <CreditList names={credit.contributors.map((contributor) => contributor.name)} />
+            {credit.description ? <p className="max-w-2xl text-center text-white/80">{credit.description}</p> : null}
+            {credit.contributors.length ? <CreditList names={credit.contributors.map((contributor) => contributor.name)} /> : null}
+            {credit.groups.map((group, groupIndex) => (
+              <div key={`${group.title}-${groupIndex}`} className="flex flex-col items-center gap-2">
+                <h3 className="font-primary text-white text-2xl">{group.title}</h3>
+                <CreditList names={group.contributors.map((contributor) => contributor.name)} />
+              </div>
+            ))}
           </div>
         ))}
       </div>

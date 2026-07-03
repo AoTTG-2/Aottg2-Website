@@ -7,11 +7,32 @@ import type { ProfileResponse } from "../../../auth/types";
 import type { AdminSection } from "../types";
 
 const emptyContributor = () => ({ id: crypto.randomUUID(), name: "", accountId: null, sortOrder: 0 });
+const emptyGroup = (sortOrder: number) => ({ id: crypto.randomUUID(), title: "", sortOrder, contributors: [] });
 const emptyCategory = (sortOrder: number): AdminCreditCategory => ({
   id: crypto.randomUUID(),
   name: "",
+  description: "",
   sortOrder,
   contributors: [],
+  groups: [],
+});
+
+export type CreditContributorTarget = {
+  categoryIndex: number;
+  groupIndex?: number;
+  contributorIndex: number;
+};
+
+const categoryHasInvalidFields = (category: AdminCreditCategory) =>
+  !category.name.trim()
+  || category.contributors.some((contributor) => !contributor.name.trim())
+  || category.groups.some((group) => !group.title.trim() || group.contributors.some((contributor) => !contributor.name.trim()));
+
+const normalizeCategory = (category: AdminCreditCategory): AdminCreditCategory => ({
+  ...category,
+  description: category.description ?? "",
+  contributors: category.contributors ?? [],
+  groups: category.groups ?? [],
 });
 
 export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUsers: boolean, canReadAudits: boolean, section: AdminSection, refetchAudits: () => void) {
@@ -38,7 +59,7 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
           setError(data.error ?? "Could not load credits.");
           return;
         }
-        setDraft(data.categories ?? []);
+        setDraft((data.categories ?? []).map(normalizeCategory));
       })
       .catch((err: unknown) => {
         if (!controller.signal.aborted) setError(err instanceof Error ? err.message : "Could not load credits.");
@@ -54,10 +75,29 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
     setDraft((current) => current.map((category, i) => i === index ? { ...category, ...patch } : category));
   }
 
-  function updateContributor(categoryIndex: number, contributorIndex: number, patch: Partial<AdminCreditCategory["contributors"][number]>) {
+  function updateGroup(categoryIndex: number, groupIndex: number, patch: Partial<AdminCreditCategory["groups"][number]>) {
     setDraft((current) => current.map((category, i) => i === categoryIndex
-      ? { ...category, contributors: category.contributors.map((contributor, j) => j === contributorIndex ? { ...contributor, ...patch } : contributor) }
+      ? { ...category, groups: category.groups.map((group, j) => j === groupIndex ? { ...group, ...patch } : group) }
       : category));
+  }
+
+  function updateContributor(target: CreditContributorTarget, patch: Partial<AdminCreditCategory["contributors"][number]>) {
+    setDraft((current) => current.map((category, i) => {
+      if (i !== target.categoryIndex) return category;
+      if (target.groupIndex === undefined) {
+        return {
+          ...category,
+          contributors: category.contributors.map((contributor, j) => j === target.contributorIndex ? { ...contributor, ...patch } : contributor),
+        };
+      }
+
+      return {
+        ...category,
+        groups: category.groups.map((group, j) => j === target.groupIndex
+          ? { ...group, contributors: group.contributors.map((contributor, k) => k === target.contributorIndex ? { ...contributor, ...patch } : contributor) }
+          : group),
+      };
+    }));
   }
 
   function moveCategory(index: number, direction: -1 | 1) {
@@ -70,14 +110,39 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
     });
   }
 
-  function moveContributor(categoryIndex: number, contributorIndex: number, direction: -1 | 1) {
+  function moveGroup(categoryIndex: number, groupIndex: number, direction: -1 | 1) {
     setDraft((current) => current.map((category, i) => {
       if (i !== categoryIndex) return category;
-      const next = [...category.contributors];
-      const target = contributorIndex + direction;
+      const next = [...category.groups];
+      const target = groupIndex + direction;
       if (target < 0 || target >= next.length) return category;
-      [next[contributorIndex], next[target]] = [next[target], next[contributorIndex]];
-      return { ...category, contributors: next };
+      [next[groupIndex], next[target]] = [next[target], next[groupIndex]];
+      return { ...category, groups: next };
+    }));
+  }
+
+  function moveContributor(target: CreditContributorTarget, direction: -1 | 1) {
+    setDraft((current) => current.map((category, i) => {
+      if (i !== target.categoryIndex) return category;
+      if (target.groupIndex === undefined) {
+        const next = [...category.contributors];
+        const nextIndex = target.contributorIndex + direction;
+        if (nextIndex < 0 || nextIndex >= next.length) return category;
+        [next[target.contributorIndex], next[nextIndex]] = [next[nextIndex], next[target.contributorIndex]];
+        return { ...category, contributors: next };
+      }
+
+      return {
+        ...category,
+        groups: category.groups.map((group, j) => {
+          if (j !== target.groupIndex) return group;
+          const next = [...group.contributors];
+          const nextIndex = target.contributorIndex + direction;
+          if (nextIndex < 0 || nextIndex >= next.length) return group;
+          [next[target.contributorIndex], next[nextIndex]] = [next[nextIndex], next[target.contributorIndex]];
+          return { ...group, contributors: next };
+        }),
+      };
     }));
   }
 
@@ -100,8 +165,8 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
 
   async function save() {
     if (!canUpdate) return;
-    if (draft.some((category) => !category.name.trim() || category.contributors.some((contributor) => !contributor.name.trim()))) {
-      toast.error("Credits save failed", { description: "Category and contributor names are required." });
+    if (draft.some(categoryHasInvalidFields)) {
+      toast.error("Credits save failed", { description: "Category, group, and contributor names are required." });
       return;
     }
 
@@ -111,10 +176,20 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
         categories: draft.map((category) => ({
           id: category.id,
           name: category.name,
+          description: category.description,
           contributors: category.contributors.map((contributor) => ({
             id: contributor.id,
             name: contributor.name,
             accountId: contributor.accountId,
+          })),
+          groups: category.groups.map((group) => ({
+            id: group.id,
+            title: group.title,
+            contributors: group.contributors.map((contributor) => ({
+              id: contributor.id,
+              name: contributor.name,
+              accountId: contributor.accountId,
+            })),
           })),
         })),
       });
@@ -122,7 +197,7 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
         toast.error("Credits save failed", { description: data.error });
         return;
       }
-      setDraft(data.categories ?? []);
+      setDraft((data.categories ?? []).map(normalizeCategory));
       toast.success("Credits saved");
       if (canReadAudits) refetchAudits();
     } catch {
@@ -130,6 +205,39 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
     } finally {
       setSaving(false);
     }
+  }
+
+  function addContributor(categoryIndex: number, groupIndex?: number) {
+    setDraft((current) => current.map((category, i) => {
+      if (i !== categoryIndex) return category;
+      if (groupIndex === undefined) return { ...category, contributors: [...category.contributors, emptyContributor()] };
+      return {
+        ...category,
+        groups: category.groups.map((group, j) => j === groupIndex ? { ...group, contributors: [...group.contributors, emptyContributor()] } : group),
+      };
+    }));
+  }
+
+  function deleteContributor(target: CreditContributorTarget) {
+    setDraft((current) => current.map((category, i) => {
+      if (i !== target.categoryIndex) return category;
+      if (target.groupIndex === undefined) {
+        return { ...category, contributors: category.contributors.filter((_, j) => j !== target.contributorIndex) };
+      }
+      return {
+        ...category,
+        groups: category.groups.map((group, j) => j === target.groupIndex
+          ? { ...group, contributors: group.contributors.filter((_, k) => k !== target.contributorIndex) }
+          : group),
+      };
+    }));
+  }
+
+  function linkContributor(target: CreditContributorTarget, user: ProfileResponse) {
+    const category = draft[target.categoryIndex];
+    const contributors = target.groupIndex === undefined ? category?.contributors : category?.groups[target.groupIndex]?.contributors;
+    const currentName = contributors?.[target.contributorIndex]?.name;
+    updateContributor(target, { accountId: user.accountId, accountDisplayName: user.displayName, name: currentName || user.displayName });
   }
 
   return {
@@ -146,14 +254,17 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
     removeCategory: (index: number) => setDraft((current) => current.filter((_, i) => i !== index)),
     moveCategory,
     setCategoryName: (index: number, name: string) => updateCategory(index, { name }),
-    addContributor: (categoryIndex: number) => setDraft((current) => current.map((category, i) => i === categoryIndex ? { ...category, contributors: [...category.contributors, emptyContributor()] } : category)),
-    deleteContributor: (categoryIndex: number, contributorIndex: number) => setDraft((current) => current.map((category, i) => i === categoryIndex ? { ...category, contributors: category.contributors.filter((_, j) => j !== contributorIndex) } : category)),
+    setCategoryDescription: (index: number, description: string) => updateCategory(index, { description }),
+    addGroup: (categoryIndex: number) => setDraft((current) => current.map((category, i) => i === categoryIndex ? { ...category, groups: [...category.groups, emptyGroup(category.groups.length)] } : category)),
+    deleteGroup: (categoryIndex: number, groupIndex: number) => setDraft((current) => current.map((category, i) => i === categoryIndex ? { ...category, groups: category.groups.filter((_, j) => j !== groupIndex) } : category)),
+    moveGroup,
+    setGroupTitle: (categoryIndex: number, groupIndex: number, title: string) => updateGroup(categoryIndex, groupIndex, { title }),
+    addContributor,
+    deleteContributor,
     moveContributor,
-    setContributorName: (categoryIndex: number, contributorIndex: number, name: string) => updateContributor(categoryIndex, contributorIndex, { name }),
-    linkContributor: (categoryIndex: number, contributorIndex: number, user: ProfileResponse) => setDraft((current) => current.map((category, i) => i === categoryIndex
-      ? { ...category, contributors: category.contributors.map((contributor, j) => j === contributorIndex ? { ...contributor, accountId: user.accountId, accountDisplayName: user.displayName, name: contributor.name || user.displayName } : contributor) }
-      : category)),
-    unlinkContributor: (categoryIndex: number, contributorIndex: number) => updateContributor(categoryIndex, contributorIndex, { accountId: null, accountDisplayName: null }),
+    setContributorName: (target: CreditContributorTarget, name: string) => updateContributor(target, { name }),
+    linkContributor,
+    unlinkContributor: (target: CreditContributorTarget) => updateContributor(target, { accountId: null, accountDisplayName: null }),
     save,
     refresh: () => setRefreshKey((current) => current + 1),
   };
