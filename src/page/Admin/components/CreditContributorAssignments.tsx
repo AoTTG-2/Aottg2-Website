@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
-import { FiLink, FiPlus, FiTrash2, FiX } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiLink, FiPlus, FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import { Badge, Button, CardDescription, Checkbox, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState, Input, Label, cn } from "@aottg2/ui";
 import type { AdminCreditCategory } from "../../../auth/creditsTypes";
 import type { ProfileResponse } from "../../../auth/types";
 import { getCreditLocations, getCreditPeople, getPersonKey, setPersonAssignment, updatePersonInDraft, type CreditPerson, type PendingCreditPerson } from "./creditPeople";
+
+const PEOPLE_PAGE_SIZE = 24;
 
 export function CreditContributorAssignments({
   canReadUsers,
@@ -31,15 +33,41 @@ export function CreditContributorAssignments({
   const [pendingPeople, setPendingPeople] = useState<PendingCreditPerson[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [linkingKey, setLinkingKey] = useState<string | null>(null);
+  const [searchDraft, setSearchDraft] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(1);
   const locations = useMemo(() => getCreditLocations(categories), [categories]);
   const people = useMemo(() => getCreditPeople(categories, pendingPeople), [categories, pendingPeople]);
+  const filteredPeople = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return people;
+    return people.filter((person) =>
+      person.name.toLowerCase().includes(query)
+      || (person.accountDisplayName ?? "").toLowerCase().includes(query)
+      || person.assignments.some((assignment) => assignment.label.toLowerCase().includes(query)));
+  }, [people, searchTerm]);
+  const pageCount = Math.max(1, Math.ceil(filteredPeople.length / PEOPLE_PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pagePeople = filteredPeople.slice((currentPage - 1) * PEOPLE_PAGE_SIZE, currentPage * PEOPLE_PAGE_SIZE);
   const selectedPerson = people.find((person) => person.key === selectedKey) ?? people[0] ?? null;
+
+  function applySearch() {
+    setSearchTerm(searchDraft.trim());
+    setPage(1);
+  }
+
+  function clearSearch() {
+    setSearchDraft("");
+    setSearchTerm("");
+    setPage(1);
+  }
 
   function addPerson() {
     const key = `pending:${crypto.randomUUID()}`;
     const person = { key, name: nextContributorName(people), accountId: null, accountDisplayName: null };
     setPendingPeople((current) => [...current, person]);
     setSelectedKey(key);
+    setPage(1);
   }
 
   function updateSelectedPerson(patch: Partial<Pick<CreditPerson, "name" | "accountId" | "accountDisplayName">>) {
@@ -104,33 +132,59 @@ export function CreditContributorAssignments({
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Contributors</h3>
-              <p className="text-xs text-muted-foreground">{people.length} people</p>
+              <p className="text-xs text-muted-foreground">{filteredPeople.length} of {people.length} people</p>
             </div>
             {canUpdate ? <Button type="button" variant="secondary" disabled={saving} onClick={addPerson}><FiPlus className="mr-2" /> Add</Button> : null}
           </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              value={searchDraft}
+              placeholder="Search contributors"
+              onChange={(event) => setSearchDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") applySearch();
+              }}
+            />
+            <Button type="button" variant="secondary" onClick={applySearch}><FiSearch className="mr-2" /> Search</Button>
+            {searchTerm ? <Button type="button" variant="secondary" size="icon" title="Clear search" onClick={clearSearch}><FiX /></Button> : null}
+          </div>
           {people.length ? (
-            <div className="space-y-2">
-              {people.map((person) => (
-                <button
-                  key={person.key}
-                  type="button"
-                  className={cn(
-                    "w-full border border-border bg-background/40 p-3 text-left transition-colors hover:border-primary/70 hover:bg-background/70",
-                    selectedPerson?.key === person.key && "border-primary bg-primary/10"
-                  )}
-                  onClick={() => setSelectedKey(person.key)}
-                >
-                  <div className="flex min-w-0 items-center justify-between gap-3">
-                    <span className="truncate text-sm font-semibold text-foreground">{person.name || "Unnamed contributor"}</span>
-                    <Badge variant="outline">{person.assignments.length}</Badge>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {person.accountId ? <Badge variant="textured">{person.accountDisplayName ?? "Linked"}</Badge> : <Badge variant="outline">String only</Badge>}
-                    {!person.persisted ? <Badge variant="secondary">new</Badge> : null}
-                  </div>
-                </button>
-              ))}
-            </div>
+            <>
+              {pagePeople.length ? (
+                <div className="space-y-2">
+                  {pagePeople.map((person) => (
+                    <button
+                      key={person.key}
+                      type="button"
+                      className={cn(
+                        "w-full border border-border bg-background/40 p-3 text-left transition-colors hover:border-primary/70 hover:bg-background/70",
+                        selectedPerson?.key === person.key && "border-primary bg-primary/10"
+                      )}
+                      onClick={() => setSelectedKey(person.key)}
+                    >
+                      <div className="flex min-w-0 items-center justify-between gap-3">
+                        <span className="truncate text-sm font-semibold text-foreground">{person.name || "Unnamed contributor"}</span>
+                        <Badge variant="outline">{person.assignments.length}</Badge>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {person.accountId ? <Badge variant="textured">{person.accountDisplayName ?? "Linked"}</Badge> : <Badge variant="outline">String only</Badge>}
+                        {!person.persisted ? <Badge variant="secondary">new</Badge> : null}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title="No matches" description="Clear the search or try another name." />
+              )}
+
+              <div className="flex items-center justify-between gap-3 border border-border bg-background/30 px-3 py-2">
+                <span className="text-xs text-muted-foreground">Page {currentPage} of {pageCount}</span>
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" size="icon" disabled={currentPage <= 1} title="Previous page" onClick={() => setPage((value) => Math.max(1, value - 1))}><FiChevronLeft /></Button>
+                  <Button type="button" variant="secondary" size="icon" disabled={currentPage >= pageCount} title="Next page" onClick={() => setPage((value) => Math.min(pageCount, value + 1))}><FiChevronRight /></Button>
+                </div>
+              </div>
+            </>
           ) : (
             <EmptyState title="No contributors" description="Add a contributor, then assign categories or groups." />
           )}
