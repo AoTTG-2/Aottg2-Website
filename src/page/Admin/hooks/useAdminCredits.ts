@@ -240,6 +240,19 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
     updateContributor(target, { accountId: user.accountId, accountDisplayName: user.displayName, name: currentName || user.displayName });
   }
 
+  function addCategory() {
+    const category = emptyCategory(draft.length);
+    setDraft((current) => [...current, category]);
+    return category.id;
+  }
+
+  function addGroup(categoryIndex: number) {
+    const category = draft[categoryIndex];
+    const group = emptyGroup(category?.groups.length ?? 0);
+    setDraft((current) => current.map((item, i) => i === categoryIndex ? { ...item, groups: [...item.groups, group] } : item));
+    return group.id;
+  }
+
   return {
     draft,
     loading,
@@ -250,12 +263,13 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
     userSearchLoading,
     setUserSearch,
     searchUsers,
-    addCategory: () => setDraft((current) => [...current, emptyCategory(current.length)]),
+    setDraft,
+    addCategory,
     removeCategory: (index: number) => setDraft((current) => current.filter((_, i) => i !== index)),
     moveCategory,
     setCategoryName: (index: number, name: string) => updateCategory(index, { name }),
     setCategoryDescription: (index: number, description: string) => updateCategory(index, { description }),
-    addGroup: (categoryIndex: number) => setDraft((current) => current.map((category, i) => i === categoryIndex ? { ...category, groups: [...category.groups, emptyGroup(category.groups.length)] } : category)),
+    addGroup,
     deleteGroup: (categoryIndex: number, groupIndex: number) => setDraft((current) => current.map((category, i) => i === categoryIndex ? { ...category, groups: category.groups.filter((_, j) => j !== groupIndex) } : category)),
     moveGroup,
     setGroupTitle: (categoryIndex: number, groupIndex: number, title: string) => updateGroup(categoryIndex, groupIndex, { title }),
