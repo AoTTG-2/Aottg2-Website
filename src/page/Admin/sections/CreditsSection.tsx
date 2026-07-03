@@ -33,6 +33,7 @@ export function CreditsSection({
   onSearchUsers,
   onSetCategoryDescription,
   onSetCategoryName,
+  onSetGroupDescription,
   onSetGroupTitle,
   onSetUserSearch,
 }: {
@@ -59,6 +60,7 @@ export function CreditsSection({
   onSearchUsers: () => void;
   onSetCategoryDescription: (categoryIndex: number, description: string) => void;
   onSetCategoryName: (categoryIndex: number, name: string) => void;
+  onSetGroupDescription: (categoryIndex: number, groupIndex: number, description: string) => void;
   onSetGroupTitle: (categoryIndex: number, groupIndex: number, title: string) => void;
   onSetUserSearch: (value: string) => void;
 }) {
@@ -202,9 +204,15 @@ export function CreditsSection({
                       </div>
 
                       {editingGroup && selectedGroup ? (
-                        <div className="space-y-2">
-                          <Label htmlFor={`credit-group-${selectedGroup.id}`}>Subcategory</Label>
-                          <Input id={`credit-group-${selectedGroup.id}`} value={selectedGroup.title} disabled={!canUpdate || saving} onChange={(event) => onSetGroupTitle(selectedCategoryIndex, selectedGroupIndex, event.target.value)} />
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`credit-group-${selectedGroup.id}`}>Subcategory</Label>
+                            <Input id={`credit-group-${selectedGroup.id}`} value={selectedGroup.title} disabled={!canUpdate || saving} onChange={(event) => onSetGroupTitle(selectedCategoryIndex, selectedGroupIndex, event.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`credit-group-description-${selectedGroup.id}`}>Description</Label>
+                            <Textarea id={`credit-group-description-${selectedGroup.id}`} className="min-h-20" value={selectedGroup.description ?? ""} disabled={!canUpdate || saving} onChange={(event) => onSetGroupDescription(selectedCategoryIndex, selectedGroupIndex, event.target.value)} />
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-4">

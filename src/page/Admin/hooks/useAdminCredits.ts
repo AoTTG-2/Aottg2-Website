@@ -7,7 +7,7 @@ import type { ProfileResponse } from "../../../auth/types";
 import type { AdminSection } from "../types";
 
 const emptyContributor = () => ({ id: crypto.randomUUID(), name: "", accountId: null, sortOrder: 0 });
-const emptyGroup = (sortOrder: number) => ({ id: crypto.randomUUID(), title: "", sortOrder, contributors: [] });
+const emptyGroup = (sortOrder: number) => ({ id: crypto.randomUUID(), title: "", description: "", sortOrder, contributors: [] });
 const emptyCategory = (sortOrder: number): AdminCreditCategory => ({
   id: crypto.randomUUID(),
   name: "",
@@ -32,7 +32,7 @@ const normalizeCategory = (category: AdminCreditCategory): AdminCreditCategory =
   ...category,
   description: category.description ?? "",
   contributors: category.contributors ?? [],
-  groups: category.groups ?? [],
+  groups: (category.groups ?? []).map((group) => ({ ...group, description: group.description ?? "" })),
 });
 
 function reorderById<T extends { id: string }>(items: T[], activeId: string, overId: string) {
@@ -206,6 +206,7 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
           groups: category.groups.map((group) => ({
             id: group.id,
             title: group.title,
+            description: group.description,
             contributors: group.contributors.map((contributor) => ({
               id: contributor.id,
               name: contributor.name,
@@ -296,6 +297,7 @@ export function useAdminCredits(canRead: boolean, canUpdate: boolean, canReadUse
     moveGroup,
     reorderGroup,
     setGroupTitle: (categoryIndex: number, groupIndex: number, title: string) => updateGroup(categoryIndex, groupIndex, { title }),
+    setGroupDescription: (categoryIndex: number, groupIndex: number, description: string) => updateGroup(categoryIndex, groupIndex, { description }),
     addContributor,
     deleteContributor,
     moveContributor,

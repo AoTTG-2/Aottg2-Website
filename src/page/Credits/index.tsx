@@ -15,7 +15,11 @@ const normalizeCredit = (credit: PublicCreditCategory): PublicCreditCategory => 
   ...credit,
   description: credit.description ?? null,
   contributors: credit.contributors ?? [],
-  groups: credit.groups ?? [],
+  groups: (credit.groups ?? []).map((group) => ({
+    ...group,
+    description: group.description ?? null,
+    contributors: group.contributors ?? [],
+  })),
 });
 
 const brushVariants = {
@@ -177,6 +181,7 @@ const Credits: React.FC = () => {
             {credit.groups.map((group, groupIndex) => (
               <div key={`${group.title}-${groupIndex}`} className="flex flex-col items-center gap-2">
                 <h3 className="font-primary text-white text-2xl">{group.title}</h3>
+                {group.description ? <p className="max-w-xl text-center text-white/70">{group.description}</p> : null}
                 <CreditList names={group.contributors.map((contributor) => contributor.name)} />
               </div>
             ))}

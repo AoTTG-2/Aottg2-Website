@@ -22,6 +22,7 @@ export function CreditPreviewTree({ categories }: { categories: AdminCreditCateg
               {category.groups.map((group) => (
                 <section key={group.id}>
                   <h4 className="text-sm font-semibold text-foreground">{group.title || "Untitled subcategory"}</h4>
+                  {group.description ? <p className="mt-1 text-xs text-muted-foreground">{group.description}</p> : null}
                   {group.contributors.length ? (
                     <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground">
                       {group.contributors.map((contributor) => <li key={contributor.id}>{contributor.name}</li>)}

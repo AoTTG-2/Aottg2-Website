@@ -232,6 +232,7 @@ function SortableGroupRow({
           <span className="truncate text-sm text-foreground">{group.title || "Untitled group"}</span>
           <Badge variant="outline">{group.contributors.length}</Badge>
         </div>
+        {group.description ? <Badge variant="outline" className="mt-2">description</Badge> : null}
       </button>
     </div>
   );

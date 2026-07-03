@@ -11,6 +11,7 @@ export interface PublicCreditCategory {
 
 export interface PublicCreditGroup {
   title: string;
+  description?: string | null;
   contributors: PublicCreditContributor[];
 }
 
@@ -38,6 +39,7 @@ export interface AdminCreditCategory {
 export interface AdminCreditGroup {
   id: string;
   title: string;
+  description?: string | null;
   sortOrder: number;
   contributors: AdminCreditContributor[];
 }
@@ -59,6 +61,7 @@ export interface UpdateCreditsRequest {
     groups: Array<{
       id?: string | null;
       title: string;
+      description?: string | null;
       contributors: Array<{
         id?: string | null;
         name: string;
