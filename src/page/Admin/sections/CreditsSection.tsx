@@ -4,9 +4,10 @@ import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitl
 import type { AdminCreditCategory } from "../../../auth/creditsTypes";
 import type { ProfileResponse } from "../../../auth/types";
 import { CreditContributorAssignments } from "../components/CreditContributorAssignments";
+import { CreditPreviewTree } from "../components/CreditPreviewTree";
 import { CreditStructureOutline, type CreditEditorSelection } from "../components/CreditStructureOutline";
 
-type CreditsTab = "structure" | "contributors";
+type CreditsTab = "structure" | "contributors" | "preview";
 
 export function CreditsSection({
   canReadUsers,
@@ -152,6 +153,7 @@ export function CreditsSection({
           <div className="flex flex-wrap gap-2">
             <CreditTabButton active={tab === "structure"} onClick={() => setTab("structure")}>Structure</CreditTabButton>
             <CreditTabButton active={tab === "contributors"} onClick={() => setTab("contributors")}>Contributors</CreditTabButton>
+            <CreditTabButton active={tab === "preview"} onClick={() => setTab("preview")}>Preview</CreditTabButton>
           </div>
 
           {tab === "structure" ? (
@@ -220,7 +222,7 @@ export function CreditsSection({
                 </CardHeader>
               </Card>
             </div>
-          ) : (
+          ) : tab === "contributors" ? (
             <Card className="border-border bg-card text-card-foreground">
               <CardContent className="p-4">
                 <CreditContributorAssignments
@@ -235,6 +237,16 @@ export function CreditsSection({
                   onSearchUsers={onSearchUsers}
                   onSetUserSearch={onSetUserSearch}
                 />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-border bg-card text-card-foreground">
+              <CardHeader>
+                <CardTitle>Preview</CardTitle>
+                <CardDescription className="mt-2">Simple tree view of the public credits order.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <CreditPreviewTree categories={draft} />
               </CardContent>
             </Card>
           )}

@@ -58,6 +58,17 @@ export function CreditContributorAssignments({
   function toggleAssignment(person: CreditPerson, locationId: string, checked: boolean) {
     const location = locations.find((item) => item.id === locationId);
     if (!location) return;
+    if (!checked && person.persisted && person.assignments.length === 1) {
+      setPendingPeople((current) => current.some((item) => item.key === person.key)
+        ? current
+        : [...current, {
+          key: person.key,
+          name: person.name,
+          accountId: person.accountId,
+          accountDisplayName: person.accountDisplayName,
+        }]);
+      setSelectedKey(person.key);
+    }
     onDraft(setPersonAssignment(categories, person, location, checked));
     if (!person.persisted && checked) {
       setPendingPeople((current) => current.filter((item) => item.key !== person.key));
