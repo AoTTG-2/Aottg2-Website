@@ -28,7 +28,7 @@ The website never stores provider secrets. All secrets stay in the accounts serv
 | `/unity-auth/complete?status=...` | Unity browser OAuth finish page. No tokens or account state. | None |
 | `/accounts` | Account/profile management. | `GET/PATCH/DELETE /v1/me`, `GET /v1/patreon/oauth/start`, `DELETE /v1/patreon/link`, `POST /v1/auth/logout` |
 | `/profile` | Logged-in profile editor for bio, socials, preset avatar, and preset banner. | `GET /v1/profile-presets`, `PATCH /v1/me` |
-| `/admin` | Permission-gated admin/moderator panel. Requires an admin-module permission such as `users.read`, `roles.read`, `permissions.read`, `audits.read`, or `auth_methods.read`. | `GET/PATCH/PUT/DELETE /v1/admin/*` according to granted permissions |
+| `/admin` | Permission-gated admin panel. Content modules such as credits and changelog follow assigned permissions; high-risk controls such as auth methods, Patreon admin, and email limit updates remain admin-only. | `GET/PATCH/PUT/DELETE /v1/admin/*` according to granted permissions and backend guardrails |
 | `/account` | Compatibility redirect. | Redirects to `/accounts` |
 
 ## Frontend Environment

@@ -18,7 +18,7 @@ export function OverviewSection({ permissions, profile, onSection }: { permissio
   return (
     <>
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Access" value={permissions.isAdmin ? "Admin" : "Moderator"} hint={profile?.displayName ?? "Panel access"} />
+        <StatCard label="Access" value={permissions.isAdmin ? "Admin" : "Delegated"} hint={profile?.displayName ?? "Panel access"} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
