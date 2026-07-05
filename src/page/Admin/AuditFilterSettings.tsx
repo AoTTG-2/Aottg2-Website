@@ -82,7 +82,7 @@ export function AuditFilterSettings({
               void apply();
             }
           }}
-          placeholder="Email, display name, or account id"
+          placeholder="Email, account name, or account id"
         />
         {accountLabel ? <Badge variant="secondary">Current: {accountLabel}</Badge> : null}
       </div>

@@ -74,12 +74,12 @@ export function UserFilterSettings({ roles, value, onApply, onReset }: UserFilte
       setOpen={setOpen}
     >
           <div className="space-y-2">
-            <Label htmlFor="admin-filter-display-name">Display name</Label>
+            <Label htmlFor="admin-filter-display-name">Account name</Label>
             <Input
               id="admin-filter-display-name"
               value={draft.displayName}
               onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))}
-              placeholder="Search display name"
+              placeholder="Search account name"
             />
           </div>
 

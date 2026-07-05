@@ -116,7 +116,7 @@ export default function Register() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="display-name">Display name</Label>
+          <Label htmlFor="display-name">Account name</Label>
           <Input
             id="display-name"
             type="text"
@@ -127,6 +127,9 @@ export default function Register() {
             maxLength={25}
             required
           />
+          <p className="text-xs text-muted-foreground">
+            Your account name is your unique account identifier. It is separate from your in-game name.
+          </p>
           <span className="block text-right text-xs text-muted-foreground">{displayName.length}/25</span>
         </div>
 

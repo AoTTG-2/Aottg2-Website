@@ -123,7 +123,7 @@ function SectionIcon({ type }: { type: AccountSectionId }) {
 
 const accountSections: Array<{ id: AccountSectionId; label: string }> = [
   { id: "profile", label: "Profile" },
-  { id: "display-name", label: "Display name" },
+  { id: "display-name", label: "Account name" },
   { id: "email", label: "Email" },
   { id: "connections", label: "Connections" },
   { id: "delete-account", label: "Delete account" },
@@ -234,7 +234,7 @@ export default function Accounts() {
 
     const trimmed = newName.trim();
     if (!trimmed) {
-      setNameMessage("Display name cannot be empty.");
+      setNameMessage("Account name cannot be empty.");
       return;
     }
 
@@ -248,7 +248,7 @@ export default function Accounts() {
         socials: profile?.socials ?? {},
       });
       if (ok) {
-        setNameMessage("Display name updated.");
+        setNameMessage("Account name updated.");
         setNameOk(true);
         await refreshProfile();
       } else {
@@ -418,15 +418,15 @@ export default function Accounts() {
 
       <div className="grid min-w-0 flex-1 gap-6 lg:ml-64">
         <AccountCard id="profile" title="Profile" description="Public account identifiers used by AOTTG2 services and game systems.">
-          <CopyValue label="Display name" value={profile.displayName} />
+          <CopyValue label="Account name" value={profile.displayName} />
           <CopyValue label="Photon user id" value={profile.photonUserId} />
           <CopyValue label="Account id" value={profile.accountId} />
         </AccountCard>
 
-        <AccountCard id="display-name" title="Display name" description="Change the name shown on your AOTTG2 account. Max 25 characters.">
+        <AccountCard id="display-name" title="Account name" description="Your account name is your unique AOTTG2 account identifier. It is separate from your in-game name. Max 25 characters.">
           <form className="space-y-4" onSubmit={handleUpdateName}>
             <div className="space-y-2">
-              <Label htmlFor="new-display-name">Display name</Label>
+              <Label htmlFor="new-display-name">Account name</Label>
               <Input id="new-display-name" type="text" autoComplete="username" value={newName} onChange={(event) => setNewName(event.target.value)} maxLength={25} required />
               <span className="block text-right text-xs text-muted-foreground">{newName.length}/25</span>
             </div>

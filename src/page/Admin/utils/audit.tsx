@@ -61,8 +61,8 @@ function formatAuditTarget(event: AuditEventResponse, metadata: AuditMetadata, a
 
 function formatAuditFieldName(key: string) {
   const labels: Record<string, string> = {
-    DisplayName: "display name",
-    displayName: "display name",
+    DisplayName: "account name",
+    displayName: "account name",
     EmailVerified: "email status",
     emailVerified: "email status",
   };

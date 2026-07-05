@@ -29,7 +29,7 @@ export function EditUserDialog({
           <DialogDescription>{user?.email}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2"><Label htmlFor="displayName">Display name</Label><Input id="displayName" value={name} onChange={(event) => onName(event.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="displayName">Account name</Label><Input id="displayName" value={name} onChange={(event) => onName(event.target.value)} /></div>
           <div className="space-y-2"><Label>Email status</Label><Select value={String(verified)} onValueChange={(value) => onVerified(value === "true")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent className={ADMIN_PORTAL_CONTENT_CLASS}><SelectItem value="true">Verified</SelectItem><SelectItem value="false">Unverified</SelectItem></SelectContent></Select></div>
         </div>
         <DialogFooter>
