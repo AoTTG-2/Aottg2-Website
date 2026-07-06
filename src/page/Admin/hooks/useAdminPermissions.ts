@@ -32,6 +32,7 @@ export function useAdminPermissions(profile: ProfileResponse | null): AdminPermi
       canDeleteSystemRoles: can("roles.system.delete"),
       canReadPermissions: can("permissions.read"),
       canReadAudits: can("audits.read"),
+      canReadAnalytics: can("analytics.read"),
       canReadEmails: can("emails.read"),
       canUpdateEmails: isAdmin && can("emails.update"),
       canReadAuthMethods: isAdmin && can("auth_methods.read"),

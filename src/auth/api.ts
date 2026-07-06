@@ -4,6 +4,7 @@ import type {
   AdminAccountDetailResponse,
   AdminAccountFilters,
   AdminAccountListResponse,
+  AdminAnalyticsResponse,
   ApiResult,
   AuditEventListResponse,
   AuthResponse,
@@ -205,6 +206,11 @@ export const authApi = {
     if (eventType.trim()) params.set("eventType", eventType.trim());
     if (accountId?.trim()) params.set("accountId", accountId.trim());
     return request<AuditEventListResponse & ErrorResponse>(`/admin/audit-events?${params}`, { signal });
+  },
+
+  getAdminAnalytics: (days: number, signal?: AbortSignal) => {
+    const params = new URLSearchParams({ days: String(days) });
+    return request<AdminAnalyticsResponse & ErrorResponse>(`/admin/analytics?${params}`, { signal });
   },
 
   getEmailLimits: (signal?: AbortSignal) =>

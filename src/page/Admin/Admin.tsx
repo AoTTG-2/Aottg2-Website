@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiAward, FiFileText, FiGrid, FiHeart, FiKey, FiLogIn, FiMail, FiShield, FiSlash, FiUsers } from "react-icons/fi";
+import { FiAward, FiBarChart2, FiFileText, FiGrid, FiHeart, FiKey, FiLogIn, FiMail, FiShield, FiSlash, FiUsers } from "react-icons/fi";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Spinner, TooltipProvider } from "@aottg2/ui";
 import { useAuth } from "../../auth/useAuth";
 import { AdminConfirmDialogs } from "./components/AdminConfirmDialogs";
@@ -13,6 +13,7 @@ import { RoleDialog } from "./components/RoleDialog";
 import { UserDetailDialog } from "./components/UserDetailDialog";
 import { useAccountActions } from "./hooks/useAccountActions";
 import { useAdminAudits } from "./hooks/useAdminAudits";
+import { useAdminAnalytics } from "./hooks/useAdminAnalytics";
 import { useAdminAuthMethods } from "./hooks/useAdminAuthMethods";
 import { useAdminCatalogs } from "./hooks/useAdminCatalogs";
 import { useAdminChangelogs } from "./hooks/useAdminChangelogs";
@@ -25,6 +26,7 @@ import { useRoleActions } from "./hooks/useRoleActions";
 import { useUserColumns } from "./hooks/useUserColumns";
 import { useUserPatreonActions } from "./hooks/useUserPatreonActions";
 import { AuthMethodsSection } from "./sections/AuthMethodsSection";
+import { AnalyticsSection } from "./sections/AnalyticsSection";
 import { AuditsSection } from "./sections/AuditsSection";
 import { ChangelogSection } from "./sections/ChangelogSection";
 import { CreditsSection } from "./sections/CreditsSection";
@@ -44,6 +46,7 @@ export default function Admin() {
 
   const sectionItems = useMemo<AdminSectionItem[]>(() => [
     { id: "overview", label: "Overview", icon: <FiGrid />, visible: permissions.canAccessAdmin },
+    { id: "analytics", label: "Analytics", icon: <FiBarChart2 />, visible: permissions.canReadAnalytics },
     { id: "users", label: "Users", icon: <FiUsers />, visible: permissions.canReadUsers },
     { id: "banned", label: "Banned users", icon: <FiSlash />, visible: permissions.canReadUsers },
     { id: "roles", label: "Roles", icon: <FiShield />, visible: permissions.canReadRoles },
@@ -60,6 +63,7 @@ export default function Admin() {
   const catalogs = useAdminCatalogs(permissions.canReadRoles, permissions.canReadPermissions);
   const users = useAdminUsers(permissions.canReadUsers, section);
   const audits = useAdminAudits(permissions.canReadAudits, permissions.canReadUsers, section);
+  const analytics = useAdminAnalytics(permissions.canReadAnalytics, section);
   const email = useEmailLimits(permissions.canReadEmails, permissions.canUpdateEmails, permissions.canReadAudits, section, audits.refetchAudits);
   const authMethods = useAdminAuthMethods(permissions.canReadAuthMethods, permissions.canUpdateAuthMethods, permissions.canReadAudits, section, audits.refetchAudits);
   const credits = useAdminCredits(permissions.canReadCredits, permissions.canUpdateCredits, permissions.canReadUsers, permissions.canReadAudits, section, audits.refetchAudits);
@@ -145,6 +149,7 @@ export default function Admin() {
           <AdminSidebar items={visibleSectionItems} section={section} onSection={setSection} />
           <section className="min-w-0 flex-1 space-y-6 px-6 py-8 lg:ml-64 lg:px-8">
             {section === "overview" ? <OverviewSection permissions={permissions} profile={profile} onSection={setSection} /> : null}
+            {section === "analytics" ? <AnalyticsSection analytics={analytics.analytics} analyticsDays={analytics.analyticsDays} analyticsError={analytics.analyticsError} analyticsLoading={analytics.analyticsLoading} onDays={analytics.setAnalyticsDays} onRefresh={analytics.refetchAnalytics} /> : null}
             {section === "users" || section === "banned" ? (
               <UsersSection mode={section} bannedStatusFilter={users.bannedStatusFilter} onBannedStatusFilter={users.setBannedStatusFilter} onPage={users.setPage} onPageSize={users.setPageSize} onRefresh={users.refetchUsers} onSearch={users.setSearch} page={users.page} pageCount={users.pageCount} pageSize={users.pageSize} roles={catalogs.roles} search={users.search} totalUsers={users.totalUsers} userColumns={userColumns} userFilters={users.userFilters} users={users.users} usersError={users.usersError} usersLoading={users.usersLoading} onApplyUserFilters={users.applyUserFilters} onResetUserFilters={users.resetUserFilters} />
             ) : null}

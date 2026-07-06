@@ -196,6 +196,46 @@ export interface AuditEventListResponse {
   events: AuditEventResponse[];
 }
 
+export interface AdminAnalyticsTotalsResponse {
+  totalAccounts: number;
+  verifiedAccounts: number;
+  unverifiedAccounts: number;
+  activeAccounts: number;
+  bannedAccounts: number;
+  suspendedAccounts: number;
+  signupIpKnownAccounts: number;
+  uniqueSignupIps: number;
+  sharedSignupIpAccounts: number;
+}
+
+export interface AdminAnalyticsDailyAccountsResponse {
+  date: string;
+  newAccounts: number;
+  cumulativeAccounts: number;
+  verifiedNewAccounts: number;
+  uniqueSignupIps: number;
+}
+
+export interface AdminAnalyticsDailyActivityResponse {
+  date: string;
+  count: number;
+}
+
+export interface AdminAnalyticsBreakdownResponse {
+  key: string;
+  count: number;
+}
+
+export interface AdminAnalyticsResponse {
+  days: number;
+  totals: AdminAnalyticsTotalsResponse;
+  registrationsByDay: AdminAnalyticsDailyAccountsResponse[];
+  roleDistribution: AdminAnalyticsBreakdownResponse[];
+  loginMethodDistribution: AdminAnalyticsBreakdownResponse[];
+  auditActivityByDay: AdminAnalyticsDailyActivityResponse[];
+  topAuditEvents: AdminAnalyticsBreakdownResponse[];
+}
+
 export interface AccountRestrictionResponse {
   kind: "ban" | "suspension" | string;
   status: "banned" | "suspended" | string;

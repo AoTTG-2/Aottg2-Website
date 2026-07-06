@@ -5,6 +5,7 @@ import type { AdminPermissions, AdminSection } from "../types";
 export function OverviewSection({ permissions, profile, onSection }: { permissions: AdminPermissions; profile: ProfileResponse | null; onSection: (section: AdminSection) => void }) {
   const items = [
     { title: "Users", description: "Search, inspect, edit, roles, delete.", section: "users" as AdminSection, visible: permissions.canReadUsers },
+    { title: "Analytics", description: "Review account, signup, role, and audit trends.", section: "analytics" as AdminSection, visible: permissions.canReadAnalytics },
     { title: "Banned users", description: "Review bans, suspensions, and IP flags.", section: "banned" as AdminSection, visible: permissions.canReadUsers },
     { title: "Roles", description: "Create roles and set permissions.", section: "roles" as AdminSection, visible: permissions.canReadRoles },
     { title: "Permissions", description: "Read backend permission catalog.", section: "permissions" as AdminSection, visible: permissions.canReadPermissions },
