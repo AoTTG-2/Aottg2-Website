@@ -4,6 +4,8 @@ import type {
   AdminAccountDetailResponse,
   AdminAccountFilters,
   AdminAccountListResponse,
+  BatchBanSameIpResponse,
+  BlockedEmailDomainsResponse,
   AdminAnalyticsResponse,
   ApiResult,
   AuditEventListResponse,
@@ -185,9 +187,10 @@ export const authApi = {
   patreonUnlink: () =>
     request<ErrorResponse>("/patreon/link", { method: "DELETE" }),
 
-  listAdminAccounts: (search: string, page: number, pageSize: number, filters?: AdminAccountFilters, signal?: AbortSignal) => {
+  listAdminAccounts: (search: string, page: number, pageSize: number, filters?: AdminAccountFilters, sort?: string, signal?: AbortSignal) => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
     if (search.trim()) params.set("search", search.trim());
+    if (sort?.trim()) params.set("sort", sort.trim());
     if (filters?.displayName.trim()) params.set("displayName", filters.displayName.trim());
     if (filters?.emailVerified === "verified") params.set("emailVerified", "true");
     if (filters?.emailVerified === "unverified") params.set("emailVerified", "false");
@@ -220,6 +223,15 @@ export const authApi = {
     request<EmailLimitStatusResponse & ErrorResponse>("/admin/email-limits", {
       method: "PATCH",
       body: JSON.stringify(body),
+    }),
+
+  getBlockedEmailDomains: (signal?: AbortSignal) =>
+    request<BlockedEmailDomainsResponse & ErrorResponse>("/admin/blocked-email-domains", { signal }),
+
+  updateBlockedEmailDomains: (domains: string[]) =>
+    request<BlockedEmailDomainsResponse & ErrorResponse>("/admin/blocked-email-domains", {
+      method: "PUT",
+      body: JSON.stringify({ domains }),
     }),
 
   listPatreonTiers: () =>
@@ -290,6 +302,12 @@ export const authApi = {
 
   clearAdminAccountFlag: (id: string, flag: string) =>
     request<AdminAccountDetailResponse & ErrorResponse>(`/admin/accounts/${id}/flags/${encodeURIComponent(flag)}`, { method: "DELETE" }),
+
+  batchBanSameIpAccounts: (id: string, reason: string) =>
+    request<BatchBanSameIpResponse & ErrorResponse>(`/admin/accounts/${id}/same-ip/batch-ban`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
 
   assignRole: (id: string, roleName: string) =>
     request<AccountRolesResponse & ErrorResponse>(`/admin/accounts/${id}/roles/${encodeURIComponent(roleName)}`, { method: "PUT" }),

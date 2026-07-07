@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { authApi } from "../../../auth/api";
-import type { AdminAccountFilters, AdminRestrictionStatusFilter, ProfileResponse } from "../../../auth/types";
+import type { AdminAccountFilters, AdminAccountSummaryResponse, AdminRestrictionStatusFilter } from "../../../auth/types";
 import { EMPTY_USER_FILTERS } from "../userFilters";
 import type { AdminSection } from "../types";
 
 export function useAdminUsers(canReadUsers: boolean, section: AdminSection) {
-  const [users, setUsers] = useState<ProfileResponse[]>([]);
+  const [users, setUsers] = useState<AdminAccountSummaryResponse[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState("");
@@ -14,7 +14,8 @@ export function useAdminUsers(canReadUsers: boolean, section: AdminSection) {
   const [userFilters, setUserFilters] = useState<AdminAccountFilters>(EMPTY_USER_FILTERS);
   const [bannedStatusFilter, setBannedStatusFilter] = useState<AdminRestrictionStatusFilter>("restricted");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(50);
+  const [sort, setSort] = useState("newest");
   const [refreshKey, setRefreshKey] = useState(0);
   const pageCount = Math.max(1, Math.ceil(totalUsers / pageSize));
 
@@ -41,7 +42,7 @@ export function useAdminUsers(canReadUsers: boolean, section: AdminSection) {
       ? { ...userFilters, restrictionStatus: bannedStatusFilter }
       : userFilters;
 
-    authApi.listAdminAccounts(debouncedSearch, page, pageSize, effectiveFilters, controller.signal)
+    authApi.listAdminAccounts(debouncedSearch, page, pageSize, effectiveFilters, sort, controller.signal)
       .then(({ ok, data }) => {
         if (controller.signal.aborted) return;
         if (ok) {
@@ -61,7 +62,7 @@ export function useAdminUsers(canReadUsers: boolean, section: AdminSection) {
       });
 
     return () => controller.abort();
-  }, [bannedStatusFilter, canReadUsers, debouncedSearch, page, pageSize, refreshKey, section, userFilters]);
+  }, [bannedStatusFilter, canReadUsers, debouncedSearch, page, pageSize, refreshKey, section, sort, userFilters]);
 
   function applyUserFilters(filters: AdminAccountFilters) {
     setUserFilters(filters);
@@ -87,6 +88,8 @@ export function useAdminUsers(canReadUsers: boolean, section: AdminSection) {
     setPage,
     pageSize,
     setPageSize,
+    sort,
+    setSort,
     pageCount,
     applyUserFilters,
     resetUserFilters,

@@ -45,6 +45,8 @@ export function useAccountActions({
   const [restrictionKind, setRestrictionKind] = useState<RestrictionKindDraft>("suspension");
   const [restrictionReason, setRestrictionReason] = useState("");
   const [restrictionExpiresAt, setRestrictionExpiresAt] = useState("");
+  const [batchBanUser, setBatchBanUser] = useState<AdminAccountDetailResponse | null>(null);
+  const [batchBanReason, setBatchBanReason] = useState("");
   const [deleteUser, setDeleteUser] = useState<ProfileResponse | null>(null);
   const [userActionLoading, setUserActionLoading] = useState(false);
 
@@ -86,6 +88,11 @@ export function useAccountActions({
     setRestrictionReason(user.restriction?.reason ?? "");
     const defaultExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
     setRestrictionExpiresAt(formatDateTimeLocal(user.restriction?.expiresAt ? new Date(user.restriction.expiresAt) : defaultExpiry));
+  }
+
+  function openBatchBan(user: AdminAccountDetailResponse) {
+    setBatchBanUser(user);
+    setBatchBanReason(user.restriction?.reason ?? "");
   }
 
   async function runAction(label: string, action: () => Promise<{ ok: boolean; data: { error?: string } }>) {
@@ -179,6 +186,35 @@ export function useAccountActions({
     }
   }
 
+  async function saveBatchBan() {
+    if (!batchBanUser) return;
+    const reason = batchBanReason.trim();
+    if (!reason) {
+      toast.error("Reason required");
+      return;
+    }
+
+    setUserActionLoading(true);
+    try {
+      const { ok, data } = await authApi.batchBanSameIpAccounts(batchBanUser.accountId, reason);
+      if (!ok) {
+        toast.error("Batch ban failed", { description: data.error });
+        return;
+      }
+
+      toast.success("Batch ban complete", { description: `${data.banned?.length ?? 0} banned, ${data.skipped?.length ?? 0} skipped.` });
+      const detailResponse = await authApi.getAdminAccount(batchBanUser.accountId);
+      if (detailResponse.ok) setDetail(detailResponse.data);
+      setBatchBanUser(null);
+      refetchUsers();
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Batch ban failed", { description: "Network error." });
+    } finally {
+      setUserActionLoading(false);
+    }
+  }
+
   async function saveEdit() {
     if (!editUser) return;
     const saved = await runAction("User updated", () => authApi.updateAdminAccount(editUser.accountId, { displayName: editName.trim(), emailVerified: editVerified }));
@@ -223,7 +259,8 @@ export function useAccountActions({
   return {
     detail, setDetail, detailOpen, setDetailOpen, detailLoading, editUser, setEditUser, editName, setEditName, editVerified, setEditVerified,
     assignUser, setAssignUser, roleDraft, setRoleDraft, restrictUser, setRestrictUser, restrictionKind, setRestrictionKind, restrictionReason, setRestrictionReason, restrictionExpiresAt, setRestrictionExpiresAt,
+    batchBanUser, setBatchBanUser, batchBanReason, setBatchBanReason,
     deleteUser, setDeleteUser, userActionLoading, viewDetails, openFullAuditForDetail, openEdit, openAssign, openRestriction,
-    saveRestriction, liftRestriction, clearAccountFlag, saveEdit, saveRoles, confirmDelete,
+    openBatchBan, saveRestriction, saveBatchBan, liftRestriction, clearAccountFlag, saveEdit, saveRoles, confirmDelete,
   };
 }

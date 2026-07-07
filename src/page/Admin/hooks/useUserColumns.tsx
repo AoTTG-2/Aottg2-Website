@@ -1,5 +1,5 @@
 import { Badge, StatusBadge } from "@aottg2/ui";
-import type { AdminAccountDetailResponse, ProfileResponse, RoleResponse } from "../../../auth/types";
+import type { AdminAccountDetailResponse, AdminAccountSummaryResponse, RoleResponse } from "../../../auth/types";
 import { ActionMenu } from "../components/ActionMenu";
 import { CappedBadgeList, DetailCellButton, TooltipBadge, TooltipText } from "../components/DetailComponents";
 import type { ActionMenuItem } from "../types";
@@ -14,15 +14,15 @@ type UseUserColumnsArgs = {
   canUpdatePatreon: boolean;
   canUpdateUsers: boolean;
   currentAccountId?: string;
-  onAssign: (user: ProfileResponse | AdminAccountDetailResponse) => void;
-  onClearFlag: (user: ProfileResponse | AdminAccountDetailResponse, flag: string) => void;
-  onDelete: (user: ProfileResponse) => void;
-  onEdit: (user: ProfileResponse) => void;
-  onLiftRestriction: (user: ProfileResponse | AdminAccountDetailResponse) => void;
-  onOpenPatreon: (user: ProfileResponse | AdminAccountDetailResponse) => void;
-  onRefreshPatreon: (user: ProfileResponse | AdminAccountDetailResponse) => void;
-  onRestrict: (user: ProfileResponse | AdminAccountDetailResponse, kind: "ban" | "suspension") => void;
-  onViewDetails: (user: ProfileResponse) => void;
+  onAssign: (user: AdminAccountSummaryResponse | AdminAccountDetailResponse) => void;
+  onClearFlag: (user: AdminAccountSummaryResponse | AdminAccountDetailResponse, flag: string) => void;
+  onDelete: (user: AdminAccountSummaryResponse) => void;
+  onEdit: (user: AdminAccountSummaryResponse) => void;
+  onLiftRestriction: (user: AdminAccountSummaryResponse | AdminAccountDetailResponse) => void;
+  onOpenPatreon: (user: AdminAccountSummaryResponse | AdminAccountDetailResponse) => void;
+  onRefreshPatreon: (user: AdminAccountSummaryResponse | AdminAccountDetailResponse) => void;
+  onRestrict: (user: AdminAccountSummaryResponse | AdminAccountDetailResponse, kind: "ban" | "suspension") => void;
+  onViewDetails: (user: AdminAccountSummaryResponse) => void;
   roles: RoleResponse[];
 };
 
@@ -49,12 +49,29 @@ export function useUserColumns({
     {
       key: "user",
       header: "User",
-      className: "w-64",
-      cell: (user: ProfileResponse) => (
+      className: "w-[22rem]",
+      cell: (user: AdminAccountSummaryResponse) => (
         <DetailCellButton onClick={() => void onViewDetails(user)}>
-          <div className="w-56 max-w-full">
-            <TooltipText className="text-sm font-semibold text-foreground" value={user.displayName} />
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <TooltipText className="text-sm font-semibold text-foreground" value={user.displayName} />
+              <StatusBadge status={user.emailVerified ? "active" : "pending"}>{user.emailVerified ? "OK" : "Unverified"}</StatusBadge>
+            </div>
             <TooltipText className="text-xs text-muted-foreground" value={user.email} />
+            <TooltipText className="font-mono text-[0.68rem] text-muted-foreground" value={user.accountId} />
+          </div>
+        </DetailCellButton>
+      ),
+    },
+    {
+      key: "character",
+      header: "Character",
+      className: "w-48",
+      cell: (user: AdminAccountSummaryResponse) => (
+        <DetailCellButton onClick={() => void onViewDetails(user)}>
+          <div className="min-w-0">
+            <TooltipText className="text-sm font-medium text-foreground" value={user.characterName || "—"} />
+            <TooltipText className="text-xs text-muted-foreground" value={user.guildName || "No guild"} />
           </div>
         </DetailCellButton>
       ),
@@ -62,26 +79,16 @@ export function useUserColumns({
     {
       key: "roles",
       header: "Roles",
-      className: "w-72",
-      cell: (user: ProfileResponse) => (
-        <CappedBadgeList items={sortRolesForDisplay(user.roles)} getLabel={(role) => roleLabel(role, roles)} getVariant={roleVariant} onClick={canManageUserRoles ? () => onAssign(user) : undefined} />
-      ),
-    },
-    {
-      key: "email",
-      header: "Email",
-      className: "w-32",
-      cell: (user: ProfileResponse) => (
-        <DetailCellButton onClick={() => void onViewDetails(user)}>
-          <StatusBadge status={user.emailVerified ? "active" : "pending"}>{user.emailVerified ? "Verified" : "Unverified"}</StatusBadge>
-        </DetailCellButton>
+      className: "w-56",
+      cell: (user: AdminAccountSummaryResponse) => (
+        <CappedBadgeList items={sortRolesForDisplay(user.roles)} getLabel={(role) => roleLabel(role, roles)} getVariant={roleVariant} limit={3} onClick={canManageUserRoles ? () => onAssign(user) : undefined} />
       ),
     },
     {
       key: "status",
       header: "Status",
       className: "w-40",
-      cell: (user: ProfileResponse) => (
+      cell: (user: AdminAccountSummaryResponse) => (
         <DetailCellButton onClick={() => void onViewDetails(user)}>
           <div className="flex flex-nowrap items-center gap-1.5">
             <Badge variant={restrictionBadgeVariant(user.restrictionStatus)}>{restrictionLabel(user.restrictionStatus)}</Badge>
@@ -91,16 +98,17 @@ export function useUserColumns({
       ),
     },
     {
-      key: "patreon",
-      header: "Patreon",
+      key: "created",
+      header: "Created",
       className: "w-44",
-      cell: (user: ProfileResponse) => (
+      cell: (user: AdminAccountSummaryResponse) => (
         <DetailCellButton onClick={() => void onViewDetails(user)}>
           <div className="flex flex-nowrap items-center gap-1.5">
+            <span className="whitespace-nowrap text-sm">{formatDate(user.createdAt)}</span>
             <StatusBadge status={user.patreon?.linked ? "active" : "draft"}>{patreonStatusText(user.patreon)}</StatusBadge>
             {user.patreon?.tierIds.length ? (
               <TooltipBadge tooltip={user.patreon.tierIds.join(", ")}>
-                <Badge variant="outline" className="whitespace-nowrap text-[0.68rem]">+{user.patreon.tierIds.length} tiers</Badge>
+                <Badge variant="outline" className="whitespace-nowrap text-[0.68rem]">+{user.patreon.tierIds.length}</Badge>
               </TooltipBadge>
             ) : null}
           </div>
@@ -108,20 +116,10 @@ export function useUserColumns({
       ),
     },
     {
-      key: "created",
-      header: "Created",
-      className: "w-36",
-      cell: (user: ProfileResponse) => (
-        <DetailCellButton onClick={() => void onViewDetails(user)}>
-          <span className="whitespace-nowrap text-sm">{formatDate(user.createdAt)}</span>
-        </DetailCellButton>
-      ),
-    },
-    {
       key: "actions",
       header: "Actions",
       className: "w-12",
-      cell: (user: ProfileResponse) => {
+      cell: (user: AdminAccountSummaryResponse) => {
         const items = [
           canReadUsers ? { label: "View details", onSelect: () => void onViewDetails(user) } : null,
           canUpdateUsers ? { label: "Edit profile", onSelect: () => onEdit(user) } : null,

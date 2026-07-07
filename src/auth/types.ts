@@ -40,6 +40,11 @@ export interface ProfileResponse {
   createdAt?: string;
 }
 
+export interface AdminAccountSummaryResponse extends Omit<ProfileResponse, "permissions"> {
+  characterName?: string | null;
+  guildName?: string | null;
+}
+
 export interface ProfilePreset {
   key: string;
   label: string;
@@ -73,7 +78,7 @@ export interface AdminAccountListResponse {
   total: number;
   page: number;
   pageSize: number;
-  accounts: ProfileResponse[];
+  accounts: AdminAccountSummaryResponse[];
 }
 
 export interface PermissionResponse {
@@ -144,6 +149,10 @@ export interface EmailLimitStatusResponse {
   month: EmailLimitPeriodResponse;
   today: EmailLimitTodayResponse;
   recentDays: EmailLimitDailyUsageResponse[];
+}
+
+export interface BlockedEmailDomainsResponse {
+  domains: string[];
 }
 
 export type AuthMethodKey = "email_password" | "discord" | "google";
@@ -256,11 +265,37 @@ export interface SameIpAccountResponse {
   creationIpAddress?: string | null;
 }
 
+export interface BatchBanAccountResult {
+  accountId: string;
+  email: string;
+  displayName: string;
+}
+
+export interface BatchBanSkippedAccount extends BatchBanAccountResult {
+  reason: string;
+}
+
+export interface BatchBanSameIpResponse {
+  banned: BatchBanAccountResult[];
+  skipped: BatchBanSkippedAccount[];
+}
+
+export interface AccountCharacterNameHistoryResponse {
+  characterName: string;
+  guildName: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  seenCount: number;
+}
+
 export interface AdminAccountDetailResponse extends ProfileResponse {
   hasPassword: boolean;
   creationIpAddress?: string | null;
   canViewRawIp?: boolean;
   sameIpAccounts?: SameIpAccountResponse[];
+  characterName?: string | null;
+  guildName?: string | null;
+  characterNameHistory?: AccountCharacterNameHistoryResponse[];
   oAuthLinks: OAuthLinkResponse[];
   activeSessionCount: number;
   updatedAt: string;

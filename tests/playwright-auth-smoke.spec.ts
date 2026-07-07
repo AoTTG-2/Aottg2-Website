@@ -44,7 +44,7 @@ test('website login reaches account page and logout returns to login', async ({ 
   await page.getByRole('button', { name: 'Sign in' }).click();
 
   await expect(page).toHaveURL(/\/accounts$/);
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible();
   await expect(page.locator(`[title="${email}"]`)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Display name' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Connections' })).toBeVisible();
@@ -110,7 +110,7 @@ test('oauth callback exchanges session code and opens account page', async ({ pa
 
   await page.goto('http://localhost:5173/oauth-callback?code=mock-code');
   await expect(page).toHaveURL(/\/accounts$/);
-  await expect(page.getByRole('heading', { name: 'Account' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'OAuth Tester' })).toBeVisible();
   await expect(page.locator('[title="oauth@example.test"]')).toBeVisible();
 });

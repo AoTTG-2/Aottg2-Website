@@ -15,6 +15,8 @@ export function useEmailLimits(canReadEmails: boolean, canUpdateEmails: boolean,
   const [dailyIpLimit, setDailyIpLimit] = useState("");
   const [monthlyResetDay, setMonthlyResetDay] = useState("");
   const [dailyResetHourUtc, setDailyResetHourUtc] = useState("");
+  const [blockedDomains, setBlockedDomains] = useState<string[]>([]);
+  const [blockedDomainsDraft, setBlockedDomainsDraft] = useState("");
   const [emailLimitsSaving, setEmailLimitsSaving] = useState(false);
 
   useEffect(() => {
@@ -24,9 +26,13 @@ export function useEmailLimits(canReadEmails: boolean, canUpdateEmails: boolean,
     setEmailLimitsLoading(true);
     setEmailLimitsError("");
 
-    authApi.getEmailLimits(controller.signal)
-      .then(({ ok, data }) => {
+    Promise.all([
+      authApi.getEmailLimits(controller.signal),
+      authApi.getBlockedEmailDomains(controller.signal),
+    ])
+      .then(([limitsResult, domainsResult]) => {
         if (controller.signal.aborted) return;
+        const { ok, data } = limitsResult;
         if (ok) {
           setEmailLimits(data);
           setMonthlyHardLimit(String(data.settings.monthlyHardLimit));
@@ -36,6 +42,14 @@ export function useEmailLimits(canReadEmails: boolean, canUpdateEmails: boolean,
           setDailyResetHourUtc(String(data.settings.dailyResetHourUtc));
         } else {
           setEmailLimitsError(data.error ?? "Could not load email service limits.");
+        }
+
+        if (domainsResult.ok) {
+          const domains = domainsResult.data.domains ?? [];
+          setBlockedDomains(domains);
+          setBlockedDomainsDraft(domains.join(", "));
+        } else if (ok) {
+          setEmailLimitsError(domainsResult.data.error ?? "Could not load blocked email domains.");
         }
       })
       .catch((error: unknown) => {
@@ -91,6 +105,32 @@ export function useEmailLimits(canReadEmails: boolean, canUpdateEmails: boolean,
     }
   }
 
+  async function saveBlockedDomains() {
+    if (!canUpdateEmails) return;
+    const domains = blockedDomainsDraft
+      .split(",")
+      .map((domain) => domain.trim())
+      .filter(Boolean);
+
+    setEmailLimitsSaving(true);
+    try {
+      const { ok, data } = await authApi.updateBlockedEmailDomains(domains);
+      if (!ok) {
+        toast.error("Blocked domains save failed", { description: data.error });
+        return;
+      }
+
+      setBlockedDomains(data.domains ?? []);
+      setBlockedDomainsDraft((data.domains ?? []).join(", "));
+      toast.success("Blocked email domains saved");
+      if (canReadAudits) refetchAudits();
+    } catch {
+      toast.error("Blocked domains save failed", { description: "Network error." });
+    } finally {
+      setEmailLimitsSaving(false);
+    }
+  }
+
   return {
     emailLimits,
     emailLimitsLoading,
@@ -105,8 +145,12 @@ export function useEmailLimits(canReadEmails: boolean, canUpdateEmails: boolean,
     setMonthlyResetDay,
     dailyResetHourUtc,
     setDailyResetHourUtc,
+    blockedDomains,
+    blockedDomainsDraft,
+    setBlockedDomainsDraft,
     emailLimitsSaving,
     saveEmailLimits,
+    saveBlockedDomains,
     refetchEmailLimits: () => setEmailLimitsRefreshKey((current) => current + 1),
   };
 }

@@ -21,6 +21,7 @@ export function UserDetailDialog({
   profileAccountId,
   roles,
   onAssign,
+  onBatchBan,
   onClearFlag,
   onClearPatreonOverrideUser,
   onFullAudit,
@@ -43,6 +44,7 @@ export function UserDetailDialog({
   profileAccountId?: string;
   roles: RoleResponse[];
   onAssign: (user: AdminAccountDetailResponse) => void;
+  onBatchBan: (user: AdminAccountDetailResponse) => void;
   onClearFlag: (user: ProfileResponse | AdminAccountDetailResponse, flag: string) => void;
   onClearPatreonOverrideUser: (user: AdminAccountDetailResponse) => void;
   onFullAudit: () => void;
@@ -79,6 +81,7 @@ export function UserDetailDialog({
                   <>
                     <Button type="button" size="sm" variant="secondary" disabled={actionLoading || detail.accountId === profileAccountId} onClick={() => onRestrict(detail, "suspension")}>Suspend</Button>
                     <Button type="button" size="sm" variant="destructive" disabled={actionLoading || detail.accountId === profileAccountId} onClick={() => onRestrict(detail, "ban")}>Ban</Button>
+                    <Button type="button" size="sm" variant="destructive" disabled={actionLoading || detail.accountId === profileAccountId || !detail.creationIpAddress} onClick={() => onBatchBan(detail)}>Batch ban IP</Button>
                     {detail.restrictionStatus !== "active" ? <Button type="button" size="sm" variant="secondary" disabled={actionLoading} onClick={() => onLiftRestriction(detail)}>Lift</Button> : null}
                   </>
                 ) : null}
@@ -96,6 +99,8 @@ export function UserDetailDialog({
               <DetailSection title="Account">
                 <dl className="space-y-1">
                   <DetailRow label="Photon">{detail.photonUserId ?? "—"}</DetailRow>
+                  <DetailRow label="Character">{detail.characterName ?? "—"}</DetailRow>
+                  <DetailRow label="Guild">{detail.guildName ?? "—"}</DetailRow>
                   <DetailRow label="Password">{detail.hasPassword ? "Yes" : "No"}</DetailRow>
                   <DetailRow label="IP">{detail.creationIpAddress ?? "—"}</DetailRow>
                   <DetailRow label="Roles">
@@ -124,6 +129,19 @@ export function UserDetailDialog({
                   <DetailRow label="Expires">{detail.restriction.expiresAt ? `${formatAuditTimestamp(detail.restriction.expiresAt)} (${shortRestrictionCountdown(detail.restriction.expiresAt)})` : "Never"}</DetailRow>
                 </dl>
               ) : <p className="text-xs text-muted-foreground">Account can log in and use normal account actions.</p>}
+            </DetailSection>
+
+            <DetailSection title="Character name history">
+              <div className="space-y-1 text-xs sm:text-sm">
+                {detail.characterNameHistory?.length ? detail.characterNameHistory.map((entry) => (
+                  <div key={`${entry.characterName}-${entry.guildName}-${entry.lastSeenAt}`} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_4rem_8rem] items-center gap-2">
+                    <span className="truncate font-medium text-foreground">{entry.characterName}</span>
+                    <span className="truncate text-muted-foreground">{entry.guildName || "No guild"}</span>
+                    <span className="text-right tabular-nums text-muted-foreground">x{entry.seenCount}</span>
+                    <span className="text-right tabular-nums text-muted-foreground">{formatAuditTimestamp(entry.lastSeenAt)}</span>
+                  </div>
+                )) : <span className="text-muted-foreground">None recorded yet.</span>}
+              </div>
             </DetailSection>
 
             <DetailSection title="Same IP accounts" description={detail.canViewRawIp ? "Raw IP visible to admins." : "Raw IP hidden for this viewer."}>

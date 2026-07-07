@@ -1,8 +1,10 @@
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Input, Label, Spinner, StatCard } from "@aottg2/ui";
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Input, Label, Spinner, StatCard, Textarea } from "@aottg2/ui";
 import type { EmailLimitStatusResponse } from "../../../auth/types";
 import { formatAuditTimestamp, formatCount, formatDate, usagePercent } from "../utils/format";
 
 export function EmailSection({
+  blockedDomains,
+  blockedDomainsDraft,
   canUpdateEmails,
   dailyIpLimit,
   dailyRecipientLimit,
@@ -14,13 +16,17 @@ export function EmailSection({
   monthlyHardLimit,
   monthlyResetDay,
   onDailyIpLimit,
+  onBlockedDomainsDraft,
   onDailyRecipientLimit,
   onDailyResetHourUtc,
   onMonthlyHardLimit,
   onMonthlyResetDay,
   onRefresh,
   onSave,
+  onSaveBlockedDomains,
 }: {
+  blockedDomains: string[];
+  blockedDomainsDraft: string;
   canUpdateEmails: boolean;
   dailyIpLimit: string;
   dailyRecipientLimit: string;
@@ -31,6 +37,7 @@ export function EmailSection({
   emailLimitsSaving: boolean;
   monthlyHardLimit: string;
   monthlyResetDay: string;
+  onBlockedDomainsDraft: (value: string) => void;
   onDailyIpLimit: (value: string) => void;
   onDailyRecipientLimit: (value: string) => void;
   onDailyResetHourUtc: (value: string) => void;
@@ -38,6 +45,7 @@ export function EmailSection({
   onMonthlyResetDay: (value: string) => void;
   onRefresh: () => void;
   onSave: () => void;
+  onSaveBlockedDomains: () => void;
 }) {
   const emailMonthPercent = emailLimits ? usagePercent(emailLimits.month.sent, emailLimits.settings.monthlyHardLimit) : 0;
   const maxRecentEmailSends = Math.max(1, ...(emailLimits?.recentDays.map((day) => day.sent) ?? []));
@@ -125,6 +133,14 @@ export function EmailSection({
                       <div className="space-y-2"><Label htmlFor="dailyResetHourUtc">Daily reset hour UTC</Label><Input id="dailyResetHourUtc" type="number" min={0} max={23} value={dailyResetHourUtc} onChange={(event) => onDailyResetHourUtc(event.target.value)} /></div>
                     </div>
                     <Button type="button" className="w-full" disabled={emailLimitsSaving} onClick={onSave}>{emailLimitsSaving ? "Saving..." : "Save email settings"}</Button>
+                    <div className="border-t border-border pt-4">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <Label htmlFor="blockedEmailDomains">Blocked email domains</Label>
+                        <Badge variant="secondary">{blockedDomains.length}</Badge>
+                      </div>
+                      <Textarea id="blockedEmailDomains" className="min-h-24 font-mono text-xs" value={blockedDomainsDraft} onChange={(event) => onBlockedDomainsDraft(event.target.value)} placeholder="web-library.net, mailinator.com" spellCheck={false} />
+                      <Button type="button" className="mt-3 w-full" variant="destructive" disabled={emailLimitsSaving} onClick={onSaveBlockedDomains}>{emailLimitsSaving ? "Saving..." : "Save blocked domains"}</Button>
+                    </div>
                   </>
                 ) : (
                   <div className="grid gap-3 text-sm">
@@ -133,6 +149,10 @@ export function EmailSection({
                     <div className="flex justify-between gap-3"><span className="text-muted-foreground">Daily per IP</span><span className="font-medium tabular-nums">{formatCount(emailLimits.settings.dailyIpLimit)}</span></div>
                     <div className="flex justify-between gap-3"><span className="text-muted-foreground">Monthly reset day</span><span className="font-medium tabular-nums">{emailLimits.settings.monthlyResetDay}</span></div>
                     <div className="flex justify-between gap-3"><span className="text-muted-foreground">Daily reset hour</span><span className="font-medium tabular-nums">{String(emailLimits.settings.dailyResetHourUtc).padStart(2, "0")}:00 UTC</span></div>
+                    <div className="border-t border-border pt-3">
+                      <div className="mb-2 flex justify-between gap-3"><span className="text-muted-foreground">Blocked domains</span><span className="font-medium tabular-nums">{blockedDomains.length}</span></div>
+                      <div className="max-h-32 overflow-y-auto break-words font-mono text-xs text-foreground">{blockedDomains.join(", ") || "None"}</div>
+                    </div>
                   </div>
                 )}
               </CardContent>

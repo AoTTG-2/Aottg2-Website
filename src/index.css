@@ -67,7 +67,7 @@
   }
 
   .admin-users-table table {
-    min-width: 72rem;
+    min-width: 66rem;
   }
 
   .admin-users-table th,
@@ -75,5 +75,42 @@
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
     vertical-align: middle;
+  }
+
+  .admin-users-compact .admin-users-panel {
+    border-radius: 0.375rem;
+  }
+
+  .admin-users-compact .admin-users-header {
+    padding: 0.875rem 1rem 0.5rem;
+  }
+
+  .admin-users-compact .admin-users-content {
+    padding: 0 0.75rem 0.75rem;
+  }
+
+  .admin-users-compact .admin-users-toolbar {
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+  }
+
+  .admin-users-compact input,
+  .admin-users-compact button,
+  .admin-users-compact [role="combobox"] {
+    min-height: 2rem;
+  }
+
+  .admin-users-compact .admin-users-table th,
+  .admin-users-compact .admin-users-table td {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+
+  .admin-users-compact .admin-users-table th {
+    font-size: 0.7rem;
+  }
+
+  .admin-users-compact .admin-users-table td {
+    font-size: 0.8125rem;
   }
 }
