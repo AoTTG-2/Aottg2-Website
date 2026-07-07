@@ -67,7 +67,7 @@ export function UsersSection({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <CardTitle>{banned ? "Banned users" : "Users"}</CardTitle>
-              <CardDescription className="mt-1">{banned ? "Bans, suspensions, same-IP flags." : "Search id, email, IP, OAuth, character, guild."}</CardDescription>
+              <CardDescription className="mt-1">{banned ? "Bans, suspensions, same-IP flags." : "Search account id, Photon id, email, IP, OAuth, character, guild."}</CardDescription>
             </div>
             <Badge variant="secondary">{totalUsers} {banned ? "restricted" : "total"}</Badge>
           </div>
@@ -83,7 +83,7 @@ export function UsersSection({
             </div>
           ) : null}
           <FilterBar className="admin-users-toolbar grid grid-cols-1 gap-2 xl:grid-cols-[minmax(18rem,1fr)_auto]">
-            <SearchInput value={search} onChange={(event: ChangeEvent<HTMLInputElement>) => onSearch(event.target.value)} onClear={() => onSearch("")} placeholder={banned ? "Search restricted users" : "Search id, email, IP, OAuth, character, guild"} className="max-w-none" />
+            <SearchInput value={search} onChange={(event: ChangeEvent<HTMLInputElement>) => onSearch(event.target.value)} onClear={() => onSearch("")} placeholder={banned ? "Search restricted users" : "Search account id, Photon id, email, IP, OAuth, character, guild"} className="max-w-none" />
             <div className="flex w-full flex-wrap items-center justify-end gap-2 xl:w-auto">
               <UserFilterSettings roles={roles} value={userFilters} onApply={onApplyUserFilters} onReset={onResetUserFilters} />
               <Select value={sort} onValueChange={(value) => { onSort(value); onPage(1); }}>
